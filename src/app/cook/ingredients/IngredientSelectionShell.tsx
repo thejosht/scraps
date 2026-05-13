@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CategoryBubble, IngredientBubble } from "@/components/bubbles";
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
 import {
+  EmptyState,
   PrimaryButton,
   SecondaryButton,
   SelectableChip,
@@ -25,6 +26,12 @@ type IngredientSelectionShellProps = {
   groups: IngredientGroup[];
   specificIngredients: SpecificIngredient[];
   subgroups: IngredientSubgroup[];
+};
+
+type CustomIngredient = {
+  id: IngredientId;
+  isCustom: true;
+  name: string;
 };
 
 function getPreviewText(
@@ -68,12 +75,72 @@ function getSpecificExamples({
     .slice(0, 6);
 }
 
+function normalizeSearchValue(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchesSearch(value: string, normalizedQuery: string) {
+  if (!normalizedQuery) {
+    return false;
+  }
+
+  if (value.includes(normalizedQuery)) {
+    return true;
+  }
+
+  const queryParts = normalizedQuery.split(" ");
+
+  return queryParts.every((part) => value.includes(part));
+}
+
+function getSpecificIngredientSearchText(ingredient: SpecificIngredient) {
+  return normalizeSearchValue(
+    [
+      ingredient.name,
+      ingredient.category,
+      ingredient.subcategory,
+      ...ingredient.synonyms,
+      ...ingredient.aliases,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
+function getSubgroupSearchText(subgroup: IngredientSubgroup) {
+  return normalizeSearchValue(
+    [subgroup.name, subgroup.category, subgroup.subcategory, ...subgroup.synonyms]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
+function getGroupSearchText(group: IngredientGroup) {
+  return normalizeSearchValue([group.name, group.category, ...group.synonyms].join(" "));
+}
+
+function slugifyCustomIngredient(name: string) {
+  const slug = normalizeSearchValue(name).replace(/\s+/g, "-");
+
+  return slug ? `custom_${slug}` : "custom_ingredient";
+}
+
+function getCleanCustomName(name: string) {
+  return name.trim().replace(/\s+/g, " ");
+}
+
 function buildVibeHref({
   applianceIds,
+  customIngredients,
   selectedIngredientIds,
   situationId,
 }: {
   applianceIds?: string;
+  customIngredients: CustomIngredient[];
   selectedIngredientIds: IngredientId[];
   situationId?: string;
 }) {
@@ -87,8 +154,13 @@ function buildVibeHref({
     params.set("appliances", applianceIds);
   }
 
-  if (selectedIngredientIds.length > 0) {
-    params.set("ingredients", selectedIngredientIds.join(","));
+  const ingredientIds = [
+    ...selectedIngredientIds,
+    ...customIngredients.map((ingredient) => ingredient.id),
+  ];
+
+  if (ingredientIds.length > 0) {
+    params.set("ingredients", ingredientIds.join(","));
   }
 
   const query = params.toString();
@@ -97,20 +169,27 @@ function buildVibeHref({
 }
 
 function SelectedIngredientChip({
-  ingredient,
+  helperText,
+  label,
   onRemove,
 }: {
-  ingredient: SpecificIngredient;
+  helperText?: string;
+  label: string;
   onRemove: () => void;
 }) {
   return (
     <button
-      aria-label={`Remove ${ingredient.name}`}
+      aria-label={`Remove ${label}`}
       className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[rgb(217_164_65/0.42)] bg-[rgb(217_164_65/0.16)] px-3.5 py-2 text-sm font-medium text-text-primary shadow-[0_8px_18px_rgb(217_164_65/0.12)] transition hover:border-primary-accent hover:bg-surface-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-accent"
       onClick={onRemove}
       type="button"
     >
-      <span>{ingredient.name}</span>
+      <span>{label}</span>
+      {helperText ? (
+        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">
+          {helperText}
+        </span>
+      ) : null}
       <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">
         Remove
       </span>
@@ -130,10 +209,17 @@ export function IngredientSelectionShell({
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<
     IngredientId[]
   >([]);
+  const [customIngredients, setCustomIngredients] = useState<CustomIngredient[]>(
+    [],
+  );
+  const [searchTerm, setSearchTerm] = useState("");
   const activeGroup = groups.find((group) => group.id === activeGroupId);
   const activeSubgroup = subgroups.find(
     (subgroup) => subgroup.id === activeSubgroupId,
   );
+  const normalizedSearchTerm = normalizeSearchValue(searchTerm);
+  const cleanSearchTerm = getCleanCustomName(searchTerm);
+  const isSearching = normalizedSearchTerm.length > 0;
   const activeChildren = useMemo(
     () =>
       activeGroupId
@@ -168,8 +254,63 @@ export function IngredientSelectionShell({
         .filter((ingredient): ingredient is SpecificIngredient => Boolean(ingredient)),
     [selectedIngredientIds, specificIngredients],
   );
+  const selectedItems = [
+    ...selectedIngredients.map((ingredient) => ({
+      id: ingredient.id,
+      isCustom: false,
+      name: ingredient.name,
+    })),
+    ...customIngredients,
+  ];
+  const searchSpecificResults = useMemo(
+    () =>
+      isSearching
+        ? specificIngredients
+            .filter((ingredient) =>
+              matchesSearch(
+                getSpecificIngredientSearchText(ingredient),
+                normalizedSearchTerm,
+              ),
+            )
+            .slice(0, 12)
+        : [],
+    [isSearching, normalizedSearchTerm, specificIngredients],
+  );
+  const searchSubgroupResults = useMemo(
+    () =>
+      isSearching
+        ? subgroups
+            .filter((subgroup) =>
+              matchesSearch(getSubgroupSearchText(subgroup), normalizedSearchTerm),
+            )
+            .slice(0, 8)
+        : [],
+    [isSearching, normalizedSearchTerm, subgroups],
+  );
+  const searchGroupResults = useMemo(
+    () =>
+      isSearching
+        ? groups
+            .filter((group) => {
+              const groupSearchText = getGroupSearchText(group);
+
+              return (
+                groupSearchText === normalizedSearchTerm ||
+                (normalizedSearchTerm.length >= 4 &&
+                  groupSearchText.includes(normalizedSearchTerm))
+              );
+            })
+            .slice(0, 4)
+        : [],
+    [groups, isSearching, normalizedSearchTerm],
+  );
+  const hasSearchResults =
+    searchSpecificResults.length > 0 ||
+    searchSubgroupResults.length > 0 ||
+    searchGroupResults.length > 0;
   const continueHref = buildVibeHref({
     applianceIds: flowParams.applianceIds,
+    customIngredients,
     selectedIngredientIds,
     situationId: flowParams.situationId,
   });
@@ -190,6 +331,41 @@ export function IngredientSelectionShell({
       currentIds.includes(ingredientId)
         ? currentIds.filter((id) => id !== ingredientId)
         : [...currentIds, ingredientId],
+    );
+  }
+
+  function handleSubgroupSelect(subgroup: IngredientSubgroup) {
+    setActiveGroupId(subgroup.parentId);
+    setActiveSubgroupId(subgroup.id);
+  }
+
+  function addCustomIngredient() {
+    if (!cleanSearchTerm) {
+      return;
+    }
+
+    const customIngredient = {
+      id: slugifyCustomIngredient(cleanSearchTerm),
+      isCustom: true,
+      name: cleanSearchTerm,
+    } satisfies CustomIngredient;
+
+    setCustomIngredients((currentIngredients) => {
+      if (
+        currentIngredients.some(
+          (ingredient) => ingredient.id === customIngredient.id,
+        )
+      ) {
+        return currentIngredients;
+      }
+
+      return [...currentIngredients, customIngredient];
+    });
+  }
+
+  function removeCustomIngredient(ingredientId: IngredientId) {
+    setCustomIngredients((currentIngredients) =>
+      currentIngredients.filter((ingredient) => ingredient.id !== ingredientId),
     );
   }
 
@@ -244,9 +420,9 @@ export function IngredientSelectionShell({
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
             Selected ingredients
           </p>
-          {selectedIngredients.length > 0 ? (
+          {selectedItems.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2">
-              {selectedIngredients.map((ingredient) => (
+              {selectedItems.map((ingredient) => (
                 <SelectableChip selected key={ingredient.id}>
                   {ingredient.name}
                 </SelectableChip>
@@ -268,7 +444,7 @@ export function IngredientSelectionShell({
         </div>
 
         <div className="grid gap-3">
-          {selectedIngredients.length > 0 ? (
+          {selectedItems.length > 0 ? (
             <PrimaryButton className="w-full" href={continueHref}>
               Continue to vibe
             </PrimaryButton>
@@ -309,13 +485,117 @@ export function IngredientSelectionShell({
           >
             Search ingredients
           </label>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">
+            Can&apos;t find something? Search it or add it as custom.
+          </p>
           <input
             className="mt-3 min-h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base text-text-primary shadow-[0_10px_24px_rgb(31_31_31/0.04)] outline-none transition placeholder:text-text-muted focus:border-primary-accent focus:ring-4 focus:ring-[rgb(232_93_63/0.10)]"
             id="ingredient-search-placeholder"
+            onChange={(event) => setSearchTerm(event.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                isSearching &&
+                !hasSearchResults
+              ) {
+                addCustomIngredient();
+              }
+            }}
             placeholder="Search ingredients like chicken drumsticks, leftover rice, boxed mac..."
-            readOnly
             type="search"
+            value={searchTerm}
           />
+
+          {isSearching ? (
+            <div className="mt-5 border-t border-border pt-5">
+              {hasSearchResults ? (
+                <div className="space-y-5">
+                  {searchSpecificResults.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
+                        Matching ingredients
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2.5">
+                        {searchSpecificResults.map((ingredient) => (
+                          <IngredientBubble
+                            categoryLabel={ingredient.subcategory}
+                            helperText={ingredient.storageType}
+                            key={ingredient.id}
+                            label={ingredient.name}
+                            onClick={() => toggleIngredient(ingredient.id)}
+                            selected={selectedIngredientIds.includes(
+                              ingredient.id,
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {searchSubgroupResults.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
+                        Matching subgroups
+                      </p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {searchSubgroupResults.map((subgroup) => (
+                          <button
+                            aria-pressed={subgroup.id === activeSubgroupId}
+                            className={[
+                              "rounded-2xl border p-4 text-left transition duration-200 ease-out",
+                              "hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-accent",
+                              subgroup.id === activeSubgroupId
+                                ? "border-primary-accent bg-surface-warm shadow-[0_16px_36px_rgb(232_93_63/0.14)]"
+                                : "border-border bg-surface hover:border-clay-accent hover:bg-surface-warm",
+                            ].join(" ")}
+                            key={subgroup.id}
+                            onClick={() => handleSubgroupSelect(subgroup)}
+                            type="button"
+                          >
+                            <p className="text-base font-semibold text-text-primary">
+                              {subgroup.name}
+                            </p>
+                            <p className="mt-2 text-sm leading-5 text-text-secondary">
+                              {subgroup.category}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {searchGroupResults.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
+                        Matching groups
+                      </p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {searchGroupResults.map((group) => (
+                          <CategoryBubble
+                            key={group.id}
+                            onClick={() => handleGroupSelect(group.id)}
+                            selected={group.id === activeGroupId}
+                            subtitle={getPreviewText(group.id, subgroups)}
+                            title={group.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <EmptyState
+                  action={
+                    <PrimaryButton onClick={addCustomIngredient}>
+                      Add custom ingredient
+                    </PrimaryButton>
+                  }
+                  description={`Add "${cleanSearchTerm}" as a local ingredient for this session.`}
+                  title="No match yet."
+                />
+              )}
+            </div>
+          ) : null}
         </SurfaceCard>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)]">
@@ -470,18 +750,26 @@ export function IngredientSelectionShell({
                 Selected ingredients
               </p>
               <h2 className="mt-1 text-xl font-semibold text-text-primary">
-                {selectedIngredients.length > 0
-                  ? `${selectedIngredients.length} selected.`
+                {selectedItems.length > 0
+                  ? `${selectedItems.length} selected.`
                   : "No ingredients selected yet."}
               </h2>
             </div>
-            {selectedIngredients.length > 0 ? (
+            {selectedItems.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {selectedIngredients.map((ingredient) => (
                   <SelectedIngredientChip
-                    ingredient={ingredient}
+                    label={ingredient.name}
                     key={ingredient.id}
                     onRemove={() => toggleIngredient(ingredient.id)}
+                  />
+                ))}
+                {customIngredients.map((ingredient) => (
+                  <SelectedIngredientChip
+                    helperText="Custom"
+                    key={ingredient.id}
+                    label={ingredient.name}
+                    onRemove={() => removeCustomIngredient(ingredient.id)}
                   />
                 ))}
               </div>

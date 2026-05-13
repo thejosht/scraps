@@ -1,37 +1,56 @@
-import { AppShell, PageHeader, StepProgress } from "@/components/layout";
-import { SecondaryButton, SurfaceCard } from "@/components/ui";
+import {
+  ingredientGroups,
+  ingredientSubgroups,
+  specificIngredients,
+} from "@/data";
+import { IngredientSelectionShell } from "./IngredientSelectionShell";
 
 type IngredientsPageProps = {
   searchParams?: Promise<{
+    appliances?: string;
     situation?: string;
   }>;
 };
 
-export default async function IngredientsPlaceholderPage({
+function buildCookHref({
+  applianceIds,
+  path,
+  situationId,
+}: {
+  applianceIds?: string;
+  path: string;
+  situationId?: string;
+}) {
+  const params = new URLSearchParams();
+
+  if (situationId) {
+    params.set("situation", situationId);
+  }
+
+  if (applianceIds) {
+    params.set("appliances", applianceIds);
+  }
+
+  const query = params.toString();
+
+  return query ? `${path}?${query}` : path;
+}
+
+export default async function IngredientsPage({
   searchParams,
 }: IngredientsPageProps) {
   const params = await searchParams;
-  const querySuffix = params?.situation
-    ? `?situation=${encodeURIComponent(params.situation)}`
-    : "";
 
   return (
-    <AppShell showBottomNav={false} showDesktopNav={false}>
-      <div className="space-y-5">
-        <PageHeader
-          eyebrow="Ingredients"
-          title="Ingredient selection coming next."
-          description="This placeholder keeps the flow target in place without building the ingredient explorer yet."
-        />
-        <SurfaceCard warm className="p-5 sm:p-6">
-          <StepProgress currentStep={3} />
-          <div className="mt-6">
-            <SecondaryButton href={`/cook/appliances${querySuffix}`}>
-              Back to appliances
-            </SecondaryButton>
-          </div>
-        </SurfaceCard>
-      </div>
-    </AppShell>
+    <IngredientSelectionShell
+      backHref={buildCookHref({
+        applianceIds: params?.appliances,
+        path: "/cook/appliances",
+        situationId: params?.situation,
+      })}
+      groups={ingredientGroups}
+      specificIngredients={specificIngredients}
+      subgroups={ingredientSubgroups}
+    />
   );
 }

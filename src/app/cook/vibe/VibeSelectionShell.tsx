@@ -8,15 +8,19 @@ import {
   SelectableChip,
   SurfaceCard,
 } from "@/components/ui";
+import { buildNextHref, decodeCustomValue, slugifyCustomValue } from "@/lib/flow/queryParams";
 import type { VibeId, VibeOption } from "@/types";
 
 type VibeSelectionShellProps = {
   backHref: string;
   flowParams: {
-    applianceIds?: string;
-    ingredientIds?: string;
+    applianceIds: string[];
+    customIngredients: string[];
+    ingredientIds: string[];
     situationId?: string;
   };
+  initialCustomVibes: string[];
+  initialVibeIds: string[];
   vibes: VibeOption[];
 };
 
@@ -24,6 +28,7 @@ type CustomVibe = {
   id: string;
   isCustom: true;
   label: string;
+  queryValue: string;
 };
 
 type VibeSection = {
@@ -74,79 +79,72 @@ function getCleanCustomVibe(value: string) {
 }
 
 function slugifyCustomVibe(value: string) {
-  const slug = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const slug = slugifyCustomValue(value);
 
   return slug ? `custom_${slug}` : "custom_vibe";
 }
 
 function buildResultsHref({
-  applianceIds,
   customVibes,
-  ingredientIds,
-  situationId,
+  flowParams,
   vibeIds,
 }: {
-  applianceIds?: string;
   customVibes: CustomVibe[];
-  ingredientIds?: string;
-  situationId?: string;
+  flowParams: VibeSelectionShellProps["flowParams"];
   vibeIds: VibeId[];
 }) {
-  const params = new URLSearchParams();
-
-  if (situationId) {
-    params.set("situation", situationId);
-  }
-
-  if (applianceIds) {
-    params.set("appliances", applianceIds);
-  }
-
-  if (ingredientIds) {
-    params.set("ingredients", ingredientIds);
-  }
-
-  if (vibeIds.length > 0) {
-    params.set("vibes", vibeIds.join(","));
-  }
-
-  customVibes.forEach((vibe) => {
-    params.append("customVibes", vibe.label);
+  return buildNextHref({
+    path: "/cook/results",
+    query: {
+      appliances: flowParams.applianceIds,
+      customIngredients: flowParams.customIngredients,
+      customVibes: customVibes.map((vibe) => vibe.queryValue),
+      ingredients: flowParams.ingredientIds,
+      situation: flowParams.situationId,
+      vibes: vibeIds,
+    },
   });
-
-  const query = params.toString();
-
-  return query ? `/cook/results?${query}` : "/cook/results";
 }
 
 export function VibeSelectionShell({
   backHref,
   flowParams,
+  initialCustomVibes,
+  initialVibeIds,
   vibes,
 }: VibeSelectionShellProps) {
-  const [selectedVibeIds, setSelectedVibeIds] = useState<VibeId[]>([]);
+  const validVibeIds = new Set(vibes.map((vibe) => vibe.id));
+  const [selectedVibeIds, setSelectedVibeIds] = useState<VibeId[]>(
+    initialVibeIds.filter((vibeId): vibeId is VibeId =>
+      validVibeIds.has(vibeId as VibeId),
+    ),
+  );
   const [customVibeInput, setCustomVibeInput] = useState("");
-  const [customVibes, setCustomVibes] = useState<CustomVibe[]>([]);
+  const [customVibes, setCustomVibes] = useState<CustomVibe[]>(
+    initialCustomVibes.map((vibe) => {
+      const label = decodeCustomValue(vibe);
+
+      return {
+        id: slugifyCustomVibe(label),
+        isCustom: true,
+        label,
+        queryValue: label,
+      };
+    }),
+  );
   const cleanCustomVibeInput = getCleanCustomVibe(customVibeInput);
   const selectedVibes = selectedVibeIds
     .map((vibeId) => vibes.find((vibe) => vibe.id === vibeId))
     .filter((vibe): vibe is VibeOption => Boolean(vibe));
   const selectedCount = selectedVibes.length + customVibes.length;
   const resultsHref = buildResultsHref({
-    applianceIds: flowParams.applianceIds,
     customVibes,
-    ingredientIds: flowParams.ingredientIds,
-    situationId: flowParams.situationId,
+    flowParams,
     vibeIds: selectedVibeIds,
   });
   const skipHref = buildResultsHref({
-    applianceIds: flowParams.applianceIds,
     customVibes: [],
-    ingredientIds: flowParams.ingredientIds,
-    situationId: flowParams.situationId,
+    flowParams,
     vibeIds: [],
   });
 
@@ -173,6 +171,7 @@ export function VibeSelectionShell({
       id: slugifyCustomVibe(cleanCustomVibeInput),
       isCustom: true,
       label: cleanCustomVibeInput,
+      queryValue: cleanCustomVibeInput,
     } satisfies CustomVibe;
 
     setSelectedVibeIds((currentIds) =>

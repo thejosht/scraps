@@ -3,56 +3,58 @@ import {
   ingredientSubgroups,
   specificIngredients,
 } from "@/data";
+import {
+  buildNextHref,
+  decodeCustomValue,
+  parseCsvParam,
+  slugifyCustomValue,
+} from "@/lib/flow/queryParams";
 import { IngredientSelectionShell } from "./IngredientSelectionShell";
 
 type IngredientsPageProps = {
   searchParams?: Promise<{
     appliances?: string;
+    customIngredients?: string | string[];
+    ingredients?: string;
     situation?: string;
   }>;
 };
-
-function buildCookHref({
-  applianceIds,
-  path,
-  situationId,
-}: {
-  applianceIds?: string;
-  path: string;
-  situationId?: string;
-}) {
-  const params = new URLSearchParams();
-
-  if (situationId) {
-    params.set("situation", situationId);
-  }
-
-  if (applianceIds) {
-    params.set("appliances", applianceIds);
-  }
-
-  const query = params.toString();
-
-  return query ? `${path}?${query}` : path;
-}
 
 export default async function IngredientsPage({
   searchParams,
 }: IngredientsPageProps) {
   const params = await searchParams;
+  const applianceIds = parseCsvParam(params?.appliances);
+  const initialIngredientIds = parseCsvParam(params?.ingredients);
+  const initialCustomIngredients = parseCsvParam(params?.customIngredients).map(
+    (value) => {
+      const queryValue = slugifyCustomValue(value);
+
+      return {
+        id: queryValue ? `custom_${queryValue}` : "custom_ingredient",
+        isCustom: true as const,
+        name: decodeCustomValue(value),
+        queryValue,
+      };
+    },
+  );
 
   return (
     <IngredientSelectionShell
-      backHref={buildCookHref({
-        applianceIds: params?.appliances,
+      backHref={buildNextHref({
         path: "/cook/appliances",
-        situationId: params?.situation,
+        query: {
+          appliances: applianceIds,
+          situation: params?.situation,
+        },
       })}
       flowParams={{
-        applianceIds: params?.appliances,
+        applianceIds,
         situationId: params?.situation,
       }}
       groups={ingredientGroups}
+      initialCustomIngredients={initialCustomIngredients}
+      initialIngredientIds={initialIngredientIds}
       specificIngredients={specificIngredients}
       subgroups={ingredientSubgroups}
     />

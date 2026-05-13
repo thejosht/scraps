@@ -1,66 +1,106 @@
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
 import { SecondaryButton, SurfaceCard } from "@/components/ui";
+import { appliances } from "@/data/appliances";
+import {
+  ingredientGroups,
+  ingredientSubgroups,
+  specificIngredients,
+} from "@/data/ingredients";
+import { vibes } from "@/data/vibes";
+import {
+  buildNextHref,
+  decodeCustomValue,
+  parseCsvParam,
+} from "@/lib/flow/queryParams";
 
 type ResultsPageProps = {
   searchParams?: Promise<{
-    appliances?: string;
+    appliances?: string | string[];
+    customIngredients?: string | string[];
     customVibes?: string | string[];
-    ingredients?: string;
+    ingredients?: string | string[];
     situation?: string;
-    vibes?: string;
+    vibes?: string | string[];
   }>;
 };
 
-function buildBackHref({
-  applianceIds,
-  customVibes,
-  ingredientIds,
-  situationId,
-  vibeIds,
+const situationLabels = new Map([
+  ["real-meal", "I need a real meal"],
+  ["quick", "I want something quick"],
+  ["too-tired", "I'm too tired"],
+  ["cheap-filling", "Cheap and filling"],
+  ["bake", "I want to bake"],
+  ["snack", "I want a snack"],
+  ["upgrade-premade", "Make a quick meal better"],
+  ["emergency", "Emergency meal"],
+]);
+
+const applianceLabels = new Map(
+  appliances.map((appliance) => [appliance.id, appliance.label]),
+);
+
+const ingredientLabels = new Map(
+  [...ingredientGroups, ...ingredientSubgroups, ...specificIngredients].map(
+    (ingredient) => [ingredient.id, ingredient.name],
+  ),
+);
+
+const vibeLabels = new Map(vibes.map((vibe) => [vibe.id, vibe.label]));
+
+function getLabel(id: string, labels: Map<string, string>) {
+  return labels.get(id) ?? decodeCustomValue(id);
+}
+
+function SummarySection({
+  items,
+  title,
 }: {
-  applianceIds?: string;
-  customVibes?: string | string[];
-  ingredientIds?: string;
-  situationId?: string;
-  vibeIds?: string;
+  items: string[];
+  title: string;
 }) {
-  const params = new URLSearchParams();
-
-  if (situationId) {
-    params.set("situation", situationId);
-  }
-
-  if (applianceIds) {
-    params.set("appliances", applianceIds);
-  }
-
-  if (ingredientIds) {
-    params.set("ingredients", ingredientIds);
-  }
-
-  if (vibeIds) {
-    params.set("vibes", vibeIds);
-  }
-
-  const customVibeValues = Array.isArray(customVibes)
-    ? customVibes
-    : customVibes
-      ? [customVibes]
-      : [];
-
-  customVibeValues.forEach((vibe) => {
-    params.append("customVibes", vibe);
-  });
-
-  const query = params.toString();
-
-  return query ? `/cook/vibe?${query}` : "/cook/vibe";
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
+        {title}
+      </p>
+      {items.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {items.map((item) => (
+            <span
+              className="rounded-full border border-border bg-surface-warm px-3 py-1.5 text-sm font-medium text-text-primary"
+              key={item}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm leading-6 text-text-secondary">None received.</p>
+      )}
+    </div>
+  );
 }
 
 export default async function ResultsPlaceholderPage({
   searchParams,
 }: ResultsPageProps) {
   const params = await searchParams;
+  const applianceIds = parseCsvParam(params?.appliances);
+  const ingredientIds = parseCsvParam(params?.ingredients);
+  const customIngredients = parseCsvParam(params?.customIngredients);
+  const vibeIds = parseCsvParam(params?.vibes);
+  const customVibes = parseCsvParam(params?.customVibes);
+  const backHref = buildNextHref({
+    path: "/cook/vibe",
+    query: {
+      appliances: applianceIds,
+      customIngredients,
+      customVibes,
+      ingredients: ingredientIds,
+      situation: params?.situation,
+      vibes: vibeIds,
+    },
+  });
 
   return (
     <AppShell showBottomNav={false} showDesktopNav={false}>
@@ -72,18 +112,40 @@ export default async function ResultsPlaceholderPage({
         />
         <SurfaceCard warm className="p-5 sm:p-6">
           <StepProgress currentStep={5} />
-          <div className="mt-6">
-            <SecondaryButton
-              href={buildBackHref({
-                applianceIds: params?.appliances,
-                customVibes: params?.customVibes,
-                ingredientIds: params?.ingredients,
-                situationId: params?.situation,
-                vibeIds: params?.vibes,
-              })}
-            >
-              Back to vibe
-            </SecondaryButton>
+
+          <div className="mt-6 space-y-4">
+            <SummarySection
+              items={
+                params?.situation
+                  ? [getLabel(params.situation, situationLabels)]
+                  : []
+              }
+              title="Situation"
+            />
+            <SummarySection
+              items={applianceIds.map((id) => getLabel(id, applianceLabels))}
+              title="Appliances"
+            />
+            <SummarySection
+              items={ingredientIds.map((id) => getLabel(id, ingredientLabels))}
+              title="Ingredients"
+            />
+            <SummarySection
+              items={customIngredients.map(decodeCustomValue)}
+              title="Custom ingredients"
+            />
+            <SummarySection
+              items={vibeIds.map((id) => getLabel(id, vibeLabels))}
+              title="Vibes"
+            />
+            <SummarySection
+              items={customVibes.map(decodeCustomValue)}
+              title="Custom vibes"
+            />
+          </div>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <SecondaryButton href={backHref}>Back to vibe</SecondaryButton>
           </div>
         </SurfaceCard>
       </div>

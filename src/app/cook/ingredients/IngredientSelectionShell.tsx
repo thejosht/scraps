@@ -10,6 +10,7 @@ import {
   SelectableChip,
   SurfaceCard,
 } from "@/components/ui";
+import { buildNextHref, slugifyCustomValue } from "@/lib/flow/queryParams";
 import type {
   IngredientGroup,
   IngredientId,
@@ -20,10 +21,12 @@ import type {
 type IngredientSelectionShellProps = {
   backHref: string;
   flowParams: {
-    applianceIds?: string;
+    applianceIds: string[];
     situationId?: string;
   };
   groups: IngredientGroup[];
+  initialCustomIngredients: CustomIngredient[];
+  initialIngredientIds: string[];
   specificIngredients: SpecificIngredient[];
   subgroups: IngredientSubgroup[];
 };
@@ -32,6 +35,7 @@ type CustomIngredient = {
   id: IngredientId;
   isCustom: true;
   name: string;
+  queryValue: string;
 };
 
 type KnownSelectableIngredient = IngredientSubgroup | SpecificIngredient;
@@ -126,7 +130,7 @@ function getGroupSearchText(group: IngredientGroup) {
 }
 
 function slugifyCustomIngredient(name: string) {
-  const slug = normalizeSearchValue(name).replace(/\s+/g, "-");
+  const slug = slugifyCustomValue(name);
 
   return slug ? `custom_${slug}` : "custom_ingredient";
 }
@@ -194,38 +198,23 @@ function getSuggestedIngredients({
 }
 
 function buildVibeHref({
-  applianceIds,
   customIngredients,
+  flowParams,
   selectedIngredientIds,
-  situationId,
 }: {
-  applianceIds?: string;
   customIngredients: CustomIngredient[];
+  flowParams: IngredientSelectionShellProps["flowParams"];
   selectedIngredientIds: IngredientId[];
-  situationId?: string;
 }) {
-  const params = new URLSearchParams();
-
-  if (situationId) {
-    params.set("situation", situationId);
-  }
-
-  if (applianceIds) {
-    params.set("appliances", applianceIds);
-  }
-
-  const ingredientIds = [
-    ...selectedIngredientIds,
-    ...customIngredients.map((ingredient) => ingredient.id),
-  ];
-
-  if (ingredientIds.length > 0) {
-    params.set("ingredients", ingredientIds.join(","));
-  }
-
-  const query = params.toString();
-
-  return query ? `/cook/vibe?${query}` : "/cook/vibe";
+  return buildNextHref({
+    path: "/cook/vibe",
+    query: {
+      appliances: flowParams.applianceIds,
+      customIngredients: customIngredients.map((ingredient) => ingredient.queryValue),
+      ingredients: selectedIngredientIds,
+      situation: flowParams.situationId,
+    },
+  });
 }
 
 function SelectedIngredientChip({
@@ -261,16 +250,21 @@ export function IngredientSelectionShell({
   backHref,
   flowParams,
   groups,
+  initialCustomIngredients,
+  initialIngredientIds,
   specificIngredients,
   subgroups,
 }: IngredientSelectionShellProps) {
+  const knownSelectableIds = new Set(
+    [...subgroups, ...specificIngredients].map((ingredient) => ingredient.id),
+  );
   const [activeGroupId, setActiveGroupId] = useState<string>();
   const [activeSubgroupId, setActiveSubgroupId] = useState<string>();
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<
     IngredientId[]
-  >([]);
+  >(initialIngredientIds.filter((ingredientId) => knownSelectableIds.has(ingredientId)));
   const [customIngredients, setCustomIngredients] = useState<CustomIngredient[]>(
-    [],
+    initialCustomIngredients,
   );
   const [searchTerm, setSearchTerm] = useState("");
   const activeGroup = groups.find((group) => group.id === activeGroupId);
@@ -388,10 +382,9 @@ export function IngredientSelectionShell({
     searchSubgroupResults.length > 0 ||
     searchGroupResults.length > 0;
   const continueHref = buildVibeHref({
-    applianceIds: flowParams.applianceIds,
     customIngredients,
+    flowParams,
     selectedIngredientIds,
-    situationId: flowParams.situationId,
   });
 
   function handleGroupSelect(groupId: IngredientId) {
@@ -427,12 +420,13 @@ export function IngredientSelectionShell({
       id: slugifyCustomIngredient(cleanSearchTerm),
       isCustom: true,
       name: cleanSearchTerm,
+      queryValue: slugifyCustomValue(cleanSearchTerm),
     } satisfies CustomIngredient;
 
     setCustomIngredients((currentIngredients) => {
       if (
         currentIngredients.some(
-          (ingredient) => ingredient.id === customIngredient.id,
+          (ingredient) => ingredient.queryValue === customIngredient.queryValue,
         )
       ) {
         return currentIngredients;

@@ -1,57 +1,45 @@
 import { vibes } from "@/data";
+import { buildNextHref, parseCsvParam } from "@/lib/flow/queryParams";
 import { VibeSelectionShell } from "./VibeSelectionShell";
 
 type VibePageProps = {
   searchParams?: Promise<{
     appliances?: string;
+    customIngredients?: string | string[];
+    customVibes?: string | string[];
     ingredients?: string;
     situation?: string;
+    vibes?: string;
   }>;
 };
 
-function buildBackHref({
-  applianceIds,
-  ingredientIds,
-  situationId,
-}: {
-  applianceIds?: string;
-  ingredientIds?: string;
-  situationId?: string;
-}) {
-  const params = new URLSearchParams();
-
-  if (situationId) {
-    params.set("situation", situationId);
-  }
-
-  if (applianceIds) {
-    params.set("appliances", applianceIds);
-  }
-
-  if (ingredientIds) {
-    params.set("ingredients", ingredientIds);
-  }
-
-  const query = params.toString();
-
-  return query ? `/cook/ingredients?${query}` : "/cook/ingredients";
-}
-
 export default async function VibePage({ searchParams }: VibePageProps) {
   const params = await searchParams;
+  const applianceIds = parseCsvParam(params?.appliances);
+  const ingredientIds = parseCsvParam(params?.ingredients);
+  const customIngredients = parseCsvParam(params?.customIngredients);
+  const initialVibeIds = parseCsvParam(params?.vibes);
+  const initialCustomVibes = parseCsvParam(params?.customVibes);
 
   return (
     <VibeSelectionShell
-      backHref={buildBackHref({
-        applianceIds: params?.appliances,
-        ingredientIds: params?.ingredients,
-        situationId: params?.situation,
+      backHref={buildNextHref({
+        path: "/cook/ingredients",
+        query: {
+          appliances: applianceIds,
+          customIngredients,
+          ingredients: ingredientIds,
+          situation: params?.situation,
+        },
       })}
       flowParams={{
-        applianceIds: params?.appliances,
-        ingredientIds: params?.ingredients,
+        applianceIds,
+        customIngredients,
+        ingredientIds,
         situationId: params?.situation,
       }}
+      initialCustomVibes={initialCustomVibes}
+      initialVibeIds={initialVibeIds}
       vibes={vibes}
     />
   );

@@ -6,10 +6,16 @@ import {
   SelectableChip,
   SurfaceCard,
 } from "@/components/ui";
+import { buildNextHref, parseCsvParam } from "@/lib/flow/queryParams";
 
 type CookPageProps = {
   searchParams?: Promise<{
+    appliances?: string | string[];
+    customIngredients?: string | string[];
+    customVibes?: string | string[];
+    ingredients?: string | string[];
     situation?: string;
+    vibes?: string | string[];
   }>;
 };
 
@@ -67,9 +73,26 @@ const foodSituations: FoodSituation[] = [
 
 export default async function CookPage({ searchParams }: CookPageProps) {
   const params = await searchParams;
+  const applianceIds = parseCsvParam(params?.appliances);
+  const ingredientIds = parseCsvParam(params?.ingredients);
+  const customIngredients = parseCsvParam(params?.customIngredients);
+  const vibeIds = parseCsvParam(params?.vibes);
+  const customVibes = parseCsvParam(params?.customVibes);
   const selectedSituation = foodSituations.find(
     (situation) => situation.id === params?.situation,
   );
+  const getCookHref = (path: string, situationId: string) =>
+    buildNextHref({
+      path,
+      query: {
+        appliances: applianceIds,
+        customIngredients,
+        customVibes,
+        ingredients: ingredientIds,
+        situation: situationId,
+        vibes: vibeIds,
+      },
+    });
 
   const summaryPanel = (
     <SurfaceCard className="p-5">
@@ -113,7 +136,7 @@ export default async function CookPage({ searchParams }: CookPageProps) {
           {selectedSituation ? (
             <PrimaryButton
               className="w-full"
-              href={`/cook/appliances?situation=${selectedSituation.id}`}
+              href={getCookHref("/cook/appliances", selectedSituation.id)}
             >
               Continue to appliances
             </PrimaryButton>
@@ -162,7 +185,7 @@ export default async function CookPage({ searchParams }: CookPageProps) {
                       ? "border-primary-accent bg-surface-warm shadow-[0_16px_36px_rgb(232_93_63/0.14)]"
                       : "border-border bg-surface shadow-[0_12px_30px_rgb(31_31_31/0.05)] hover:-translate-y-0.5 hover:border-clay-accent hover:bg-surface-warm",
                   ].join(" ")}
-                  href={`/cook?situation=${situation.id}`}
+                  href={getCookHref("/cook", situation.id)}
                   key={situation.id}
                   role="button"
                 >

@@ -1,6 +1,7 @@
 export type IngredientId = string;
 
-export type IngredientNodeKind = "group" | "subgroup" | "ingredient";
+export type IngredientSpecificity = "group" | "subgroup" | "specific";
+export type IngredientNodeKind = IngredientSpecificity;
 
 export type IngredientStorage =
   | "fresh"
@@ -23,27 +24,61 @@ export type IngredientTag =
   | "baking"
   | "leftover";
 
-type IngredientNodeBase = {
+export type IngredientDietaryTag =
+  | "vegetarian"
+  | "vegan"
+  | "gluten-free"
+  | "dairy-free"
+  | "contains-dairy"
+  | "contains-gluten"
+  | "contains-meat"
+  | "contains-fish"
+  | "contains-shellfish"
+  | "contains-egg"
+  | "nut-free";
+
+export type Ingredient = {
   id: IngredientId;
+  name: string;
   label: string;
+  category: string;
+  subcategory?: string;
+  parentId?: IngredientId;
+  specificity: IngredientSpecificity;
   kind: IngredientNodeKind;
-  aliases?: string[];
-  tags?: IngredientTag[];
+  synonyms: string[];
+  aliases: string[];
+  commonPairings: IngredientId[];
+  unlocksTemplates: string[];
+  dietaryTags: IngredientDietaryTag[];
+  storageType?: IngredientStorage;
+  storage?: IngredientStorage;
+  cookingNotes?: string;
+  isPantryBasic: boolean;
+  isCommon: boolean;
+  tags: IngredientTag[];
 };
 
-export type IngredientGroup = IngredientNodeBase & {
+export type IngredientGroup = Ingredient & {
+  specificity: "group";
   kind: "group";
-  children: IngredientSubgroup[];
+  parentId?: undefined;
+  subcategory?: undefined;
 };
 
-export type IngredientSubgroup = IngredientNodeBase & {
+export type IngredientSubgroup = Ingredient & {
+  specificity: "subgroup";
   kind: "subgroup";
-  children: Ingredient[];
+  parentId: IngredientId;
 };
 
-export type Ingredient = IngredientNodeBase & {
-  kind: "ingredient";
-  storage: IngredientStorage;
+export type SpecificIngredient = Ingredient & {
+  specificity: "specific";
+  kind: "specific";
+  parentId: IngredientId;
 };
 
-export type IngredientTreeNode = IngredientGroup | IngredientSubgroup | Ingredient;
+export type IngredientTreeNode =
+  | IngredientGroup
+  | IngredientSubgroup
+  | SpecificIngredient;

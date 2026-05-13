@@ -14,15 +14,18 @@ export type IngredientSlotMatch = {
   ingredientIds: IngredientId[];
   ingredientNames: string[];
   isMatched: boolean;
+  notes: string[];
   slot: RecipeIngredientSlot;
 };
 
 export type RecipeIngredientMatch = {
   ingredientsUsed: string[];
+  missingCoreRequired: string[];
   matchedOptional: IngredientSlotMatch[];
   matchedRequired: IngredientSlotMatch[];
   missingOptional: string[];
   missingRequired: string[];
+  preparationNotes: string[];
   optionalCoverage: number;
   requiredCoverage: number;
 };
@@ -39,7 +42,10 @@ function matchSlot(
   slot: RecipeIngredientSlot,
   selectedIngredients: Ingredient[],
 ): IngredientSlotMatch {
-  const directIds = new Set(slot.ingredientIds ?? []);
+  const directIds = new Set([
+    ...(slot.ingredientIds ?? []),
+    ...(slot.equivalentIngredientIds ?? []),
+  ]);
   const directMatches = selectedIngredients.filter((ingredient) =>
     directIds.has(ingredient.id),
   );
@@ -50,11 +56,18 @@ function matchSlot(
   const matches = [...directMatches, ...tagMatches];
   const minMatches = slot.min ?? 1;
   const usedMatches = matches.slice(0, minMatches);
+  const preparedIds = new Set(slot.preparedIngredientIds ?? slot.ingredientIds ?? []);
+  const preparationNote = slot.preparationNote;
+  const needsPreparationNote =
+    preparationNote &&
+    usedMatches.length > 0 &&
+    usedMatches.some((ingredient) => !preparedIds.has(ingredient.id));
 
   return {
     ingredientIds: usedMatches.map((ingredient) => ingredient.id),
     ingredientNames: usedMatches.map((ingredient) => ingredient.name),
     isMatched: matches.length >= minMatches,
+    notes: needsPreparationNote ? [preparationNote] : [],
     slot,
   };
 }
@@ -85,6 +98,9 @@ export function matchRecipeIngredients({
   );
   const matchedRequired = requiredMatches.filter((match) => match.isMatched);
   const matchedOptional = optionalMatches.filter((match) => match.isMatched);
+  const missingRequiredMatches = requiredMatches.filter(
+    (match) => !match.isMatched,
+  );
   const ingredientsUsed = Array.from(
     new Set(
       [...matchedRequired, ...matchedOptional].flatMap(
@@ -95,14 +111,18 @@ export function matchRecipeIngredients({
 
   return {
     ingredientsUsed,
+    missingCoreRequired: missingRequiredMatches
+      .filter((match) => match.slot.importance === "core")
+      .map((match) => match.slot.label),
     matchedOptional,
     matchedRequired,
     missingOptional: optionalMatches
       .filter((match) => !match.isMatched)
       .map((match) => match.slot.label),
-    missingRequired: requiredMatches
-      .filter((match) => !match.isMatched)
-      .map((match) => match.slot.label),
+    missingRequired: missingRequiredMatches.map((match) => match.slot.label),
+    preparationNotes: [...matchedRequired, ...matchedOptional].flatMap(
+      (match) => match.notes,
+    ),
     optionalCoverage: getCoverage(optionalMatches),
     requiredCoverage: getCoverage(requiredMatches),
   };

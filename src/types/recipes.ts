@@ -37,9 +37,13 @@ export type RecipeSituationId = SituationId | FlowSituationId;
 export type RecipeIngredientSlot = {
   id: string;
   label: string;
+  equivalentIngredientIds?: IngredientId[];
+  importance?: "core" | "supporting";
   ingredientIds?: IngredientId[];
   tags?: IngredientTag[];
   min?: number;
+  preparationNote?: string;
+  preparedIngredientIds?: IngredientId[];
 };
 
 export type RecipeTemplate = {
@@ -80,6 +84,7 @@ export type RankedRecipeMatch = {
   ingredientsUsed: string[];
   missingRequired: string[];
   missingOptional: string[];
+  preparationNotes: string[];
   appliancesUsed: string[];
   timeMinutes: number;
   effort: EffortLevel;

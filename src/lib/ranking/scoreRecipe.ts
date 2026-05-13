@@ -115,13 +115,10 @@ function getMatchLabel({
   vibeIds: VibeId[];
 }) {
   if (missingRequired.length === 1) {
-    return "One ingredient away";
+    return "One small missing item";
   }
 
-  if (
-    situationId === "upgrade-premade" ||
-    template.tags.includes("quick-meal-upgrade")
-  ) {
+  if (template.tags.includes("quick-meal-upgrade")) {
     return "Quick meal upgrade";
   }
 
@@ -161,8 +158,10 @@ function getReasons({
   if (ingredientMatch.missingRequired.length === 0) {
     reasons.push("You have the core ingredients.");
   } else if (ingredientMatch.missingRequired.length === 1) {
-    reasons.push(`Missing ${ingredientMatch.missingRequired[0]}.`);
+    reasons.push(`Only missing ${ingredientMatch.missingRequired[0]}.`);
   }
+
+  reasons.push(...ingredientMatch.preparationNotes);
 
   if (ingredientMatch.matchedOptional.length > 0) {
     reasons.push("Optional add-ons are available.");
@@ -197,6 +196,10 @@ export function scoreRecipe({
   vibeIds: VibeId[];
 }): RankedRecipeMatch | null {
   if (!applianceMatch.isCompatible) {
+    return null;
+  }
+
+  if (ingredientMatch.missingCoreRequired.length > 0) {
     return null;
   }
 
@@ -239,6 +242,7 @@ export function scoreRecipe({
     ingredientsUsed: ingredientMatch.ingredientsUsed,
     missingRequired: ingredientMatch.missingRequired,
     missingOptional: ingredientMatch.missingOptional,
+    preparationNotes: ingredientMatch.preparationNotes,
     appliancesUsed: applianceMatch.appliancesUsed,
     timeMinutes: template.timeMinutes,
     effort: template.effort,

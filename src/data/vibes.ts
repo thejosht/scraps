@@ -1,0 +1,113 @@
+import type { VibeOption } from "@/types";
+
+export const vibes = [
+  {
+    id: "surprise-me",
+    label: "Surprise me",
+    allowsMultiSelect: true,
+    flavorInfluence: "none",
+    description: "Explore without forcing a flavor direction.",
+  },
+  {
+    id: "spicy",
+    label: "Spicy",
+    allowsMultiSelect: true,
+    flavorInfluence: "strong",
+  },
+  {
+    id: "comfort-food",
+    label: "Comfort food",
+    allowsMultiSelect: true,
+    flavorInfluence: "medium",
+  },
+  {
+    id: "crispy",
+    label: "Crispy",
+    allowsMultiSelect: true,
+    flavorInfluence: "medium",
+  },
+  {
+    id: "healthy-ish",
+    label: "Healthy-ish",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
+  {
+    id: "high-protein",
+    label: "High protein",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
+  {
+    id: "sweet",
+    label: "Sweet",
+    allowsMultiSelect: true,
+    flavorInfluence: "strong",
+  },
+  {
+    id: "savory",
+    label: "Savory",
+    allowsMultiSelect: true,
+    flavorInfluence: "medium",
+  },
+  {
+    id: "creamy",
+    label: "Creamy",
+    allowsMultiSelect: true,
+    flavorInfluence: "medium",
+  },
+  {
+    id: "fresh",
+    label: "Fresh",
+    allowsMultiSelect: true,
+    flavorInfluence: "medium",
+  },
+  {
+    id: "cheap-and-filling",
+    label: "Cheap and filling",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
+  {
+    id: "low-effort",
+    label: "Low effort",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
+  {
+    id: "caribbean-inspired",
+    label: "Caribbean-inspired",
+    allowsMultiSelect: true,
+    flavorInfluence: "strong",
+  },
+  {
+    id: "asian-inspired",
+    label: "Asian-inspired",
+    allowsMultiSelect: true,
+    flavorInfluence: "strong",
+  },
+  {
+    id: "italian-inspired",
+    label: "Italian-inspired",
+    allowsMultiSelect: true,
+    flavorInfluence: "strong",
+  },
+  {
+    id: "mexican-inspired",
+    label: "Mexican-inspired",
+    allowsMultiSelect: true,
+    flavorInfluence: "strong",
+  },
+  {
+    id: "breakfast-style",
+    label: "Breakfast-style",
+    allowsMultiSelect: true,
+    flavorInfluence: "medium",
+  },
+  {
+    id: "gym-meal",
+    label: "Gym meal",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
+] satisfies VibeOption[];

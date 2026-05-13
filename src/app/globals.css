@@ -1,26 +1,118 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --scraps-background: #faf7f0;
+  --scraps-surface: #ffffff;
+  --scraps-surface-warm: #fff8ed;
+  --scraps-text-primary: #1f1f1f;
+  --scraps-text-secondary: #6b6258;
+  --scraps-text-muted: #8a8178;
+  --scraps-border: #e8ded2;
+  --scraps-accent-primary: #e85d3f;
+  --scraps-accent-primary-dark: #c94832;
+  --scraps-accent-green: #4f8a5b;
+  --scraps-accent-gold: #d9a441;
+  --scraps-accent-clay: #c9795b;
+  --scraps-accent-soft-orange: #f4a261;
+
+  --background: var(--scraps-background);
+  --foreground: var(--scraps-text-primary);
+  --surface: var(--scraps-surface);
+  --surface-warm: var(--scraps-surface-warm);
+  --text-primary: var(--scraps-text-primary);
+  --text-secondary: var(--scraps-text-secondary);
+  --text-muted: var(--scraps-text-muted);
+  --border: var(--scraps-border);
+  --primary-accent: var(--scraps-accent-primary);
+  --primary-accent-dark: var(--scraps-accent-primary-dark);
+  --green-accent: var(--scraps-accent-green);
+  --gold-accent: var(--scraps-accent-gold);
+  --clay-accent: var(--scraps-accent-clay);
+  --soft-orange: var(--scraps-accent-soft-orange);
+  --shadow-subtle: 0 18px 50px rgb(31 31 31 / 0.08);
+  --radius-card: 1.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-warm: var(--surface-warm);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-primary-accent: var(--primary-accent);
+  --color-primary-accent-dark: var(--primary-accent-dark);
+  --color-green-accent: var(--green-accent);
+  --color-gold-accent: var(--gold-accent);
+  --color-clay-accent: var(--clay-accent);
+  --color-soft-orange: var(--soft-orange);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shadow-subtle: var(--shadow-subtle);
+  --radius-card: var(--radius-card);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(232 93 63 / 0.18);
+  color: var(--text-primary);
+}
+
+.scraps-page {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.scraps-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-subtle);
+}
+
+.scraps-card-warm {
+  background: var(--surface-warm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-subtle);
+}
+
+.scraps-text-primary {
+  color: var(--text-primary);
+}
+
+.scraps-text-secondary {
+  color: var(--text-secondary);
+}
+
+.scraps-text-muted {
+  color: var(--text-muted);
+}
+
+.scraps-border {
+  border-color: var(--border);
+}
+
+.scraps-accent-primary {
+  color: var(--primary-accent);
+}
+
+.scraps-bg-accent-primary {
+  background: var(--primary-accent);
+}
+
+.scraps-shadow-subtle {
+  box-shadow: var(--shadow-subtle);
+}
+
+.scraps-rounded-card {
+  border-radius: var(--radius-card);
 }

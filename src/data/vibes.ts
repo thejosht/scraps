@@ -110,4 +110,16 @@ export const vibes = [
     allowsMultiSelect: true,
     flavorInfluence: "light",
   },
+  {
+    id: "one-pan",
+    label: "One-pan",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
+  {
+    id: "no-cook",
+    label: "No-cook",
+    allowsMultiSelect: true,
+    flavorInfluence: "light",
+  },
 ] satisfies VibeOption[];

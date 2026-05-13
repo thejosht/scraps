@@ -16,7 +16,9 @@ export type VibeId =
   | "italian-inspired"
   | "mexican-inspired"
   | "breakfast-style"
-  | "gym-meal";
+  | "gym-meal"
+  | "one-pan"
+  | "no-cook";
 
 export type VibeFlavorInfluence = "none" | "light" | "medium" | "strong";
 

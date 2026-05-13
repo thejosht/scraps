@@ -1,5 +1,5 @@
-import { AppShell, PageHeader, StepProgress } from "@/components/layout";
-import { SecondaryButton, SurfaceCard } from "@/components/ui";
+import { vibes } from "@/data";
+import { VibeSelectionShell } from "./VibeSelectionShell";
 
 type VibePageProps = {
   searchParams?: Promise<{
@@ -37,34 +37,22 @@ function buildBackHref({
   return query ? `/cook/ingredients?${query}` : "/cook/ingredients";
 }
 
-export default async function VibePlaceholderPage({
-  searchParams,
-}: VibePageProps) {
+export default async function VibePage({ searchParams }: VibePageProps) {
   const params = await searchParams;
 
   return (
-    <AppShell showBottomNav={false} showDesktopNav={false}>
-      <div className="space-y-5">
-        <PageHeader
-          eyebrow="Vibe"
-          title="Vibe selection coming next."
-          description="This placeholder keeps the flow target in place without building the vibe selector yet."
-        />
-        <SurfaceCard warm className="p-5 sm:p-6">
-          <StepProgress currentStep={4} />
-          <div className="mt-6">
-            <SecondaryButton
-              href={buildBackHref({
-                applianceIds: params?.appliances,
-                ingredientIds: params?.ingredients,
-                situationId: params?.situation,
-              })}
-            >
-              Back to ingredients
-            </SecondaryButton>
-          </div>
-        </SurfaceCard>
-      </div>
-    </AppShell>
+    <VibeSelectionShell
+      backHref={buildBackHref({
+        applianceIds: params?.appliances,
+        ingredientIds: params?.ingredients,
+        situationId: params?.situation,
+      })}
+      flowParams={{
+        applianceIds: params?.appliances,
+        ingredientIds: params?.ingredients,
+        situationId: params?.situation,
+      }}
+      vibes={vibes}
+    />
   );
 }

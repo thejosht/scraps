@@ -9,7 +9,14 @@ export type ApplianceId =
   | "no-cook-only"
   | "slow-cooker"
   | "instant-pot"
-  | "grill";
+  | "pressure-cooker"
+  | "grill"
+  | "waffle-maker"
+  | "food-processor"
+  | "stand-mixer"
+  | "hand-mixer"
+  | "panini-press"
+  | "electric-skillet";
 
 export type ApplianceCategory =
   | "heat"

@@ -111,7 +111,10 @@ export default async function CookPage({ searchParams }: CookPageProps) {
 
         <div className="grid gap-3">
           {selectedSituation ? (
-            <PrimaryButton className="w-full" href="/cook/appliances">
+            <PrimaryButton
+              className="w-full"
+              href={`/cook/appliances?situation=${selectedSituation.id}`}
+            >
               Continue to appliances
             </PrimaryButton>
           ) : (

@@ -19,29 +19,52 @@ const previewIngredients = [
   { category: "Dairy", label: "Cheese" },
 ];
 
-const whyCards = [
+const takeoutMomentCards = [
   {
-    title: "Less typing than a chatbot",
+    label: "Decision first",
+    title: "You have food. You just don’t have a plan.",
     description:
-      "Tap a few useful choices instead of explaining your whole kitchen from scratch.",
+      "Scraps turns random ingredients into realistic options you can actually make.",
+    tags: ["Random fridge", "Real options"],
   },
   {
-    title: "Uses what you actually have",
+    label: "Fast narrowing",
+    title: "No long prompts or recipe-blog scrolling.",
     description:
-      "Scraps starts with your ingredients, appliances, and effort level before suggesting ideas.",
+      "Tap what you have, choose a craving, and let Scraps narrow the choices.",
+    tags: ["Few taps", "Less noise"],
   },
   {
-    title: "Realistic meals, not recipe-blog fluff",
+    label: "Real kitchen food",
+    title: "Works with real-life food.",
     description:
-      "The goal is a practical answer you can cook soon, not a long story about dinner.",
+      "Instant noodles, boxed mac, leftovers, frozen meals, pantry basics, and full meals all belong here.",
+    tags: ["Pantry basics", "Quick meals"],
   },
 ];
 
-const howItWorks = [
-  "Pick your food situation",
-  "Tap what you have",
-  "Choose a vibe",
-  "Get realistic meal ideas",
+const situationPreviewCards = [
+  {
+    title: "I’m too tired",
+    description: "Low effort, fewer dishes, simple steps.",
+    tag: "Low lift",
+  },
+  {
+    title: "Make a quick meal better",
+    description:
+      "Upgrade noodles, boxed mac, leftovers, frozen food, or canned soup.",
+    tag: "Upgrade",
+  },
+  {
+    title: "Cheap and filling",
+    description: "Stretch rice, pasta, eggs, beans, potatoes, and bread.",
+    tag: "Budget",
+  },
+  {
+    title: "Surprise me",
+    description: "For when you know you’re hungry but not what you want.",
+    tag: "Open choice",
+  },
 ];
 
 const desktopPreview = (
@@ -159,57 +182,101 @@ export default function Home() {
         </SurfaceCard>
       </section>
 
-      <section aria-labelledby="why-scraps" className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section aria-labelledby="takeout-moment" className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr] lg:items-end">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.14em] text-clay-accent">
               Why Scraps
             </p>
             <h2
-              className="mt-2 text-2xl font-semibold text-text-primary sm:text-3xl"
-              id="why-scraps"
+              className="mt-2 max-w-2xl text-2xl font-semibold text-text-primary sm:text-3xl"
+              id="takeout-moment"
             >
-              Built for deciding, not endlessly generating.
+              Built for the moment you almost order takeout
             </h2>
           </div>
+          <p className="max-w-2xl text-sm leading-6 text-text-secondary sm:text-base lg:justify-self-end">
+            Scraps is for the very normal gap between having ingredients and
+            knowing what dinner should be. It helps you make a grounded choice
+            before takeout becomes the default.
+          </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {whyCards.map((card) => (
-            <SurfaceCard className="p-5" key={card.title}>
-              <h3 className="text-lg font-semibold text-text-primary">
-                {card.title}
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-text-secondary">
-                {card.description}
-              </p>
+          {takeoutMomentCards.map((card, index) => (
+            <SurfaceCard className="overflow-hidden p-0" key={card.title}>
+              <div
+                className={[
+                  "h-1.5",
+                  index === 0 && "bg-primary-accent",
+                  index === 1 && "bg-gold-accent",
+                  index === 2 && "bg-green-accent",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+              <div className="p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
+                  {card.label}
+                </p>
+                <h3 className="mt-4 text-lg font-semibold leading-7 text-text-primary">
+                  {card.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-text-secondary">
+                  {card.description}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {card.tags.map((tag) => (
+                    <span
+                      className="rounded-full border border-border bg-surface-warm px-3 py-1 text-xs font-semibold text-text-secondary"
+                      key={tag}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </SurfaceCard>
           ))}
         </div>
       </section>
 
-      <section aria-labelledby="how-it-works" className="space-y-4">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.14em] text-clay-accent">
-            How it works
-          </p>
-          <h2
-            className="mt-2 text-2xl font-semibold text-text-primary sm:text-3xl"
-            id="how-it-works"
-          >
-            Four quick choices, then dinner gets clearer.
-          </h2>
+      <section aria-labelledby="situation-first" className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.14em] text-clay-accent">
+              First step
+            </p>
+            <h2
+              className="mt-2 max-w-2xl text-2xl font-semibold text-text-primary sm:text-3xl"
+              id="situation-first"
+            >
+              Start with the situation, not a search bar
+            </h2>
+          </div>
+          <div className="rounded-card border border-border bg-surface-warm px-4 py-3 text-sm leading-6 text-text-secondary shadow-subtle">
+            The first question is not “write a prompt.” It is what kind of
+            food problem you are solving right now.
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {howItWorks.map((step, index) => (
-            <SurfaceCard className="p-5" key={step}>
-              <span className="grid size-9 place-items-center rounded-full bg-surface-warm text-sm font-semibold text-primary-accent">
-                {index + 1}
-              </span>
-              <h3 className="mt-5 text-base font-semibold text-text-primary">
-                {step}
+          {situationPreviewCards.map((card, index) => (
+            <SurfaceCard className="p-5" key={card.title}>
+              <div className="flex items-start justify-between gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[rgb(232_93_63/0.11)] text-sm font-semibold text-primary-accent">
+                  {index + 1}
+                </span>
+                <span className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-text-muted">
+                  {card.tag}
+                </span>
+              </div>
+              <h3 className="mt-5 text-base font-semibold leading-6 text-text-primary">
+                {card.title}
               </h3>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                {card.description}
+              </p>
             </SurfaceCard>
           ))}
         </div>

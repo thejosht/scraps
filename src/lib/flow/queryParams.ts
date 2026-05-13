@@ -30,7 +30,11 @@ export function slugifyCustomValue(value: string) {
 }
 
 export function decodeCustomValue(value: string) {
-  return value.trim().replace(/-/g, " ").replace(/\s+/g, " ");
+  return value
+    .trim()
+    .replace(/^custom[_-]/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
 }
 
 export function buildNextHref({

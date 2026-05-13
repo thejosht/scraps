@@ -7,22 +7,30 @@ import { PageHeader } from "./PageHeader";
 type AppShellProps = {
   children: ReactNode;
   className?: string;
+  headerEyebrow?: string;
+  leftPanel?: ReactNode;
   pageDescription?: string;
   pageTitle?: string;
   rightPanel?: ReactNode;
+  showBottomNav?: boolean;
+  showDesktopNav?: boolean;
 };
 
 export function AppShell({
   children,
   className = "",
+  headerEyebrow = "Scraps preview",
+  leftPanel,
   pageDescription,
   pageTitle,
   rightPanel,
+  showBottomNav = true,
+  showDesktopNav = true,
 }: AppShellProps) {
   const header =
     pageTitle || pageDescription ? (
       <PageHeader
-        eyebrow="Scraps preview"
+        eyebrow={headerEyebrow}
         title={pageTitle ?? "Scraps"}
         description={pageDescription}
       />
@@ -52,6 +60,8 @@ export function AppShell({
     </SurfaceCard>
   );
 
+  const resolvedLeftPanel = leftPanel ?? (showDesktopNav ? desktopLeftPanel : undefined);
+
   return (
     <main
       className={[
@@ -66,14 +76,14 @@ export function AppShell({
           {rightPanel ? <div>{rightPanel}</div> : null}
         </div>
 
-        <DesktopShell leftPanel={desktopLeftPanel} rightPanel={rightPanel}>
+        <DesktopShell leftPanel={resolvedLeftPanel} rightPanel={rightPanel}>
           <div className="space-y-5">
             {header}
             {children}
           </div>
         </DesktopShell>
       </div>
-      <BottomNav />
+      {showBottomNav ? <BottomNav /> : null}
     </main>
   );
 }

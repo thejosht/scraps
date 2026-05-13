@@ -1,5 +1,6 @@
 import { IngredientBubble } from "@/components/bubbles";
 import { AppShell } from "@/components/layout";
+import Link from "next/link";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -113,19 +114,19 @@ export default function Home() {
               </p>
 
               <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_1fr] xl:max-w-xl">
-                <PrimaryButton className="w-full">
+                <PrimaryButton className="w-full" href="/cook">
                   Start with what I have
                 </PrimaryButton>
-                <SecondaryButton className="w-full">
-                  Upgrade something frozen
+                <SecondaryButton className="w-full" href="/cook">
+                  Make a quick meal better
                 </SecondaryButton>
               </div>
-              <button
-                className="mt-4 min-h-11 rounded-2xl px-1 text-left text-sm font-semibold text-text-secondary transition hover:text-primary-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-accent"
-                type="button"
+              <Link
+                className="mt-4 inline-flex min-h-11 items-center rounded-2xl px-1 text-left text-sm font-semibold text-text-secondary transition hover:text-primary-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-accent"
+                href="/cook"
               >
                 Too tired, show easy meals
-              </button>
+              </Link>
             </div>
 
             <div className="rounded-card border border-border bg-surface/70 p-4 shadow-[0_18px_42px_rgb(31_31_31/0.06)] sm:p-5">

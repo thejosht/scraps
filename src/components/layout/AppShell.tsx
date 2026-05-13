@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { SurfaceCard } from "@/components/ui";
 import { BottomNav } from "./BottomNav";
-import { DesktopShell } from "./DesktopShell";
 import { PageHeader } from "./PageHeader";
 
 type AppShellProps = {
@@ -70,18 +69,33 @@ export function AppShell({
       ].join(" ")}
     >
       <div className="mx-auto w-full max-w-7xl">
-        <div className="space-y-5 lg:hidden">
-          {header}
-          <div className="grid gap-5">{children}</div>
-          {rightPanel ? <div>{rightPanel}</div> : null}
-        </div>
-
-        <DesktopShell leftPanel={resolvedLeftPanel} rightPanel={rightPanel}>
-          <div className="space-y-5">
+        <div
+          className={[
+            "grid w-full gap-5",
+            resolvedLeftPanel && rightPanel
+              ? "lg:grid-cols-[15rem_minmax(0,1fr)_20rem]"
+              : resolvedLeftPanel
+                ? "lg:grid-cols-[15rem_minmax(0,1fr)]"
+                : rightPanel
+                  ? "lg:grid-cols-[minmax(0,1fr)_20rem]"
+                  : "lg:grid-cols-1",
+          ].join(" ")}
+        >
+          {resolvedLeftPanel ? (
+            <aside className="hidden min-w-0 self-start lg:sticky lg:top-6 lg:block">
+              {resolvedLeftPanel}
+            </aside>
+          ) : null}
+          <div className="min-w-0 space-y-5">
             {header}
             {children}
           </div>
-        </DesktopShell>
+          {rightPanel ? (
+            <aside className="min-w-0 self-start lg:sticky lg:top-6">
+              {rightPanel}
+            </aside>
+          ) : null}
+        </div>
       </div>
       {showBottomNav ? <BottomNav /> : null}
     </main>

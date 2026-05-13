@@ -34,6 +34,8 @@ type CustomIngredient = {
   name: string;
 };
 
+type KnownSelectableIngredient = IngredientSubgroup | SpecificIngredient;
+
 function getPreviewText(
   parentId: IngredientId,
   children: Array<IngredientSubgroup | SpecificIngredient>,
@@ -131,6 +133,64 @@ function slugifyCustomIngredient(name: string) {
 
 function getCleanCustomName(name: string) {
   return name.trim().replace(/\s+/g, " ");
+}
+
+function getSuggestedIngredients({
+  ingredientsById,
+  selectedIngredientIds,
+  selectedIngredients,
+}: {
+  ingredientsById: Map<IngredientId, KnownSelectableIngredient>;
+  selectedIngredientIds: IngredientId[];
+  selectedIngredients: KnownSelectableIngredient[];
+}) {
+  const selectedIds = new Set(selectedIngredientIds);
+  const suggestions = new Map<
+    IngredientId,
+    {
+      firstSeenIndex: number;
+      ingredient: KnownSelectableIngredient;
+      score: number;
+    }
+  >();
+
+  selectedIngredients.forEach((selectedIngredient, selectedIndex) => {
+    selectedIngredient.commonPairings.forEach((pairingId, pairingIndex) => {
+      if (selectedIds.has(pairingId)) {
+        return;
+      }
+
+      const ingredient = ingredientsById.get(pairingId);
+
+      if (!ingredient) {
+        return;
+      }
+
+      const existingSuggestion = suggestions.get(pairingId);
+
+      if (existingSuggestion) {
+        suggestions.set(pairingId, {
+          ...existingSuggestion,
+          score: existingSuggestion.score + 1,
+        });
+        return;
+      }
+
+      suggestions.set(pairingId, {
+        firstSeenIndex: selectedIndex * 100 + pairingIndex,
+        ingredient,
+        score: 1,
+      });
+    });
+  });
+
+  return Array.from(suggestions.values())
+    .sort(
+      (first, second) =>
+        second.score - first.score || first.firstSeenIndex - second.firstSeenIndex,
+    )
+    .map((suggestion) => suggestion.ingredient)
+    .slice(0, 10);
 }
 
 function buildVibeHref({
@@ -245,14 +305,33 @@ export function IngredientSelectionShell({
         : [],
     [activeSubgroupId, specificIngredients],
   );
+  const knownIngredientsById = useMemo(
+    () =>
+      new Map<IngredientId, KnownSelectableIngredient>(
+        [...subgroups, ...specificIngredients].map((ingredient) => [
+          ingredient.id,
+          ingredient,
+        ]),
+      ),
+    [specificIngredients, subgroups],
+  );
   const selectedIngredients = useMemo(
     () =>
       selectedIngredientIds
-        .map((ingredientId) =>
-          specificIngredients.find((ingredient) => ingredient.id === ingredientId),
-        )
-        .filter((ingredient): ingredient is SpecificIngredient => Boolean(ingredient)),
-    [selectedIngredientIds, specificIngredients],
+        .map((ingredientId) => knownIngredientsById.get(ingredientId))
+        .filter((ingredient): ingredient is KnownSelectableIngredient =>
+          Boolean(ingredient),
+        ),
+    [knownIngredientsById, selectedIngredientIds],
+  );
+  const suggestedIngredients = useMemo(
+    () =>
+      getSuggestedIngredients({
+        ingredientsById: knownIngredientsById,
+        selectedIngredientIds,
+        selectedIngredients,
+      }),
+    [knownIngredientsById, selectedIngredientIds, selectedIngredients],
   );
   const selectedItems = [
     ...selectedIngredients.map((ingredient) => ({
@@ -778,18 +857,43 @@ export function IngredientSelectionShell({
         </SurfaceCard>
 
         <SurfaceCard className="p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-text-muted">
-                Good with this
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-text-primary">
-                Suggestions will appear after you choose ingredients.
-              </h2>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-text-muted">
+                  Good with this
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-text-primary">
+                  {suggestedIngredients.length > 0
+                    ? "Quick add-ons based on what you picked."
+                    : "Suggestions will appear after you choose ingredients."}
+                </h2>
+              </div>
+              {suggestedIngredients.length > 0 ? (
+                <span className="rounded-full border border-border bg-surface-warm px-3 py-1.5 text-xs font-semibold text-text-muted">
+                  Structured pairings
+                </span>
+              ) : null}
             </div>
-            <span className="rounded-full border border-border bg-surface-warm px-3 py-1.5 text-xs font-semibold text-text-muted">
-              Smart suggestions later
-            </span>
+
+            {suggestedIngredients.length > 0 ? (
+              <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+                {suggestedIngredients.map((ingredient) => (
+                  <IngredientBubble
+                    categoryLabel={ingredient.subcategory ?? ingredient.category}
+                    helperText={
+                      ingredient.specificity === "subgroup"
+                        ? "Subgroup"
+                        : ingredient.storageType
+                    }
+                    key={ingredient.id}
+                    label={ingredient.name}
+                    onClick={() => toggleIngredient(ingredient.id)}
+                    selected={selectedIngredientIds.includes(ingredient.id)}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         </SurfaceCard>
       </div>

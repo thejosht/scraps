@@ -18,6 +18,10 @@ import type {
 
 type IngredientSelectionShellProps = {
   backHref: string;
+  flowParams: {
+    applianceIds?: string;
+    situationId?: string;
+  };
   groups: IngredientGroup[];
   specificIngredients: SpecificIngredient[];
   subgroups: IngredientSubgroup[];
@@ -64,14 +68,72 @@ function getSpecificExamples({
     .slice(0, 6);
 }
 
+function buildVibeHref({
+  applianceIds,
+  selectedIngredientIds,
+  situationId,
+}: {
+  applianceIds?: string;
+  selectedIngredientIds: IngredientId[];
+  situationId?: string;
+}) {
+  const params = new URLSearchParams();
+
+  if (situationId) {
+    params.set("situation", situationId);
+  }
+
+  if (applianceIds) {
+    params.set("appliances", applianceIds);
+  }
+
+  if (selectedIngredientIds.length > 0) {
+    params.set("ingredients", selectedIngredientIds.join(","));
+  }
+
+  const query = params.toString();
+
+  return query ? `/cook/vibe?${query}` : "/cook/vibe";
+}
+
+function SelectedIngredientChip({
+  ingredient,
+  onRemove,
+}: {
+  ingredient: SpecificIngredient;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      aria-label={`Remove ${ingredient.name}`}
+      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[rgb(217_164_65/0.42)] bg-[rgb(217_164_65/0.16)] px-3.5 py-2 text-sm font-medium text-text-primary shadow-[0_8px_18px_rgb(217_164_65/0.12)] transition hover:border-primary-accent hover:bg-surface-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-accent"
+      onClick={onRemove}
+      type="button"
+    >
+      <span>{ingredient.name}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">
+        Remove
+      </span>
+    </button>
+  );
+}
+
 export function IngredientSelectionShell({
   backHref,
+  flowParams,
   groups,
   specificIngredients,
   subgroups,
 }: IngredientSelectionShellProps) {
   const [activeGroupId, setActiveGroupId] = useState<string>();
+  const [activeSubgroupId, setActiveSubgroupId] = useState<string>();
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState<
+    IngredientId[]
+  >([]);
   const activeGroup = groups.find((group) => group.id === activeGroupId);
+  const activeSubgroup = subgroups.find(
+    (subgroup) => subgroup.id === activeSubgroupId,
+  );
   const activeChildren = useMemo(
     () =>
       activeGroupId
@@ -88,6 +150,48 @@ export function IngredientSelectionShell({
       }),
     [activeGroupId, specificIngredients, subgroups],
   );
+  const activeSpecificIngredients = useMemo(
+    () =>
+      activeSubgroupId
+        ? specificIngredients.filter(
+            (ingredient) => ingredient.parentId === activeSubgroupId,
+          )
+        : [],
+    [activeSubgroupId, specificIngredients],
+  );
+  const selectedIngredients = useMemo(
+    () =>
+      selectedIngredientIds
+        .map((ingredientId) =>
+          specificIngredients.find((ingredient) => ingredient.id === ingredientId),
+        )
+        .filter((ingredient): ingredient is SpecificIngredient => Boolean(ingredient)),
+    [selectedIngredientIds, specificIngredients],
+  );
+  const continueHref = buildVibeHref({
+    applianceIds: flowParams.applianceIds,
+    selectedIngredientIds,
+    situationId: flowParams.situationId,
+  });
+
+  function handleGroupSelect(groupId: IngredientId) {
+    setActiveGroupId(groupId);
+    setActiveSubgroupId((currentSubgroupId) => {
+      const currentSubgroup = subgroups.find(
+        (subgroup) => subgroup.id === currentSubgroupId,
+      );
+
+      return currentSubgroup?.parentId === groupId ? currentSubgroupId : undefined;
+    });
+  }
+
+  function toggleIngredient(ingredientId: IngredientId) {
+    setSelectedIngredientIds((currentIds) =>
+      currentIds.includes(ingredientId)
+        ? currentIds.filter((id) => id !== ingredientId)
+        : [...currentIds, ingredientId],
+    );
+  }
 
   const summaryPanel = (
     <SurfaceCard className="p-5">
@@ -123,9 +227,34 @@ export function IngredientSelectionShell({
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
+            Active subgroup
+          </p>
+          {activeSubgroup ? (
+            <div className="mt-2">
+              <SelectableChip selected>{activeSubgroup.name}</SelectableChip>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              Pick a subgroup to see specific ingredients.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
             Selected ingredients
           </p>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">None yet.</p>
+          {selectedIngredients.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {selectedIngredients.map((ingredient) => (
+                <SelectableChip selected key={ingredient.id}>
+                  {ingredient.name}
+                </SelectableChip>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-text-secondary">None yet.</p>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-surface-warm p-4">
@@ -139,9 +268,15 @@ export function IngredientSelectionShell({
         </div>
 
         <div className="grid gap-3">
-          <PrimaryButton className="w-full" disabled>
-            Continue to vibe
-          </PrimaryButton>
+          {selectedIngredients.length > 0 ? (
+            <PrimaryButton className="w-full" href={continueHref}>
+              Continue to vibe
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton className="w-full" disabled>
+              Continue to vibe
+            </PrimaryButton>
+          )}
           <SecondaryButton className="w-full" href={backHref}>
             Back to appliances
           </SecondaryButton>
@@ -203,7 +338,7 @@ export function IngredientSelectionShell({
               {groups.map((group) => (
                 <CategoryBubble
                   key={group.id}
-                  onClick={() => setActiveGroupId(group.id)}
+                  onClick={() => handleGroupSelect(group.id)}
                   selected={group.id === activeGroupId}
                   subtitle={getPreviewText(group.id, subgroups)}
                   title={group.name}
@@ -213,24 +348,62 @@ export function IngredientSelectionShell({
           </section>
 
           <SurfaceCard className="p-5">
-            <p className="text-sm font-medium text-text-muted">
-              Category preview
-            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-text-muted">
+                  Category preview
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-text-secondary">
+                  {activeGroup ? (
+                    <span>{activeGroup.name}</span>
+                  ) : (
+                    <span>Choose a group</span>
+                  )}
+                  {activeSubgroup ? (
+                    <>
+                      <span className="text-text-muted">{">"}</span>
+                      <span className="text-text-primary">
+                        {activeSubgroup.name}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+              {activeSubgroup && activeGroup ? (
+                <SecondaryButton
+                  className="min-h-10 rounded-full px-3.5 py-2 text-xs"
+                  onClick={() => setActiveSubgroupId(undefined)}
+                >
+                  Back to {activeGroup.name}
+                </SecondaryButton>
+              ) : null}
+            </div>
             <h2 className="mt-2 text-xl font-semibold text-text-primary">
-              {activeGroup?.name ?? "Pick a group"}
+              {activeSubgroup?.name ?? activeGroup?.name ?? "Pick a group"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {activeGroup
-                ? "These are the immediate subgroups Scraps can open next."
-                : "Choose a category on the left to preview the next layer."}
+              {activeSubgroup
+                ? "Choose the specific ingredients you have right now."
+                : activeGroup
+                  ? "Choose a subgroup to get specific without seeing the whole pantry at once."
+                  : "Choose a category on the left to preview the next layer."}
             </p>
 
-            {activeChildren.length > 0 ? (
+            {!activeSubgroup && activeChildren.length > 0 ? (
               <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 {activeChildren.map((child) => (
-                  <div
-                    className="rounded-2xl border border-border bg-surface-warm p-4"
+                  <button
+                    aria-pressed={child.id === activeSubgroupId}
+                    className={[
+                      "rounded-2xl border p-4 text-left transition duration-200 ease-out",
+                      "hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-accent",
+                      child.id === activeSubgroupId
+                        ? "border-primary-accent bg-surface-warm shadow-[0_16px_36px_rgb(232_93_63/0.14)]"
+                        : "border-border bg-surface-warm hover:border-clay-accent hover:bg-surface",
+                    ].join(" ")}
                     key={child.id}
+                    onClick={() => setActiveSubgroupId(child.id)}
+                    type="button"
                   >
                     <p className="text-base font-semibold text-text-primary">
                       {child.name}
@@ -238,12 +411,35 @@ export function IngredientSelectionShell({
                     <p className="mt-2 text-sm leading-5 text-text-secondary">
                       {getPreviewText(child.id, specificIngredients)}
                     </p>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : null}
 
-            {activeExamples.length > 0 ? (
+            {activeSubgroup ? (
+              <div className="mt-5">
+                {activeSpecificIngredients.length > 0 ? (
+                  <div className="flex flex-wrap gap-2.5">
+                    {activeSpecificIngredients.map((ingredient) => (
+                      <IngredientBubble
+                        categoryLabel={ingredient.subcategory}
+                        helperText={ingredient.storageType}
+                        key={ingredient.id}
+                        label={ingredient.name}
+                        onClick={() => toggleIngredient(ingredient.id)}
+                        selected={selectedIngredientIds.includes(ingredient.id)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-2xl border border-border bg-surface-warm p-4 text-sm leading-6 text-text-secondary">
+                    Specific ingredients for this subgroup are coming later.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            {!activeSubgroup && activeExamples.length > 0 ? (
               <div className="mt-6 border-t border-border pt-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay-accent">
                   Example ingredients
@@ -254,6 +450,11 @@ export function IngredientSelectionShell({
                       categoryLabel={ingredient.subcategory}
                       key={ingredient.id}
                       label={ingredient.name}
+                      onClick={() => {
+                        setActiveSubgroupId(ingredient.parentId);
+                        toggleIngredient(ingredient.id);
+                      }}
+                      selected={selectedIngredientIds.includes(ingredient.id)}
                     />
                   ))}
                 </div>
@@ -269,12 +470,22 @@ export function IngredientSelectionShell({
                 Selected ingredients
               </p>
               <h2 className="mt-1 text-xl font-semibold text-text-primary">
-                No ingredients selected yet.
+                {selectedIngredients.length > 0
+                  ? `${selectedIngredients.length} selected.`
+                  : "No ingredients selected yet."}
               </h2>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <SelectableChip>Selection tray placeholder</SelectableChip>
-            </div>
+            {selectedIngredients.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {selectedIngredients.map((ingredient) => (
+                  <SelectedIngredientChip
+                    ingredient={ingredient}
+                    key={ingredient.id}
+                    onRemove={() => toggleIngredient(ingredient.id)}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         </SurfaceCard>
 

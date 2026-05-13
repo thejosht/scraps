@@ -48,6 +48,10 @@ export default async function IngredientsPage({
         path: "/cook/appliances",
         situationId: params?.situation,
       })}
+      flowParams={{
+        applianceIds: params?.appliances,
+        situationId: params?.situation,
+      }}
       groups={ingredientGroups}
       specificIngredients={specificIngredients}
       subgroups={ingredientSubgroups}

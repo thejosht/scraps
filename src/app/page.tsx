@@ -1,4 +1,5 @@
 import { IngredientBubble } from "@/components/bubbles";
+import { ContinueLastSession } from "@/components/flow";
 import { AppShell } from "@/components/layout";
 import Link from "next/link";
 import {
@@ -153,6 +154,7 @@ export default function Home() {
               >
                 Too tired, show easy meals
               </Link>
+              <ContinueLastSession />
             </div>
 
             <div className="rounded-card border border-border bg-surface/70 p-4 shadow-[0_18px_42px_rgb(31_31_31/0.06)] sm:p-5">

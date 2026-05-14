@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FlowSessionSync } from "@/components/flow";
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
 import {
   PrimaryButton,
@@ -163,6 +164,7 @@ export default async function CookPage({ searchParams }: CookPageProps) {
       showBottomNav={false}
       showDesktopNav={false}
     >
+      <FlowSessionSync />
       <div className="space-y-5">
         <PageHeader
           eyebrow="Situation"

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { FlowSessionSync } from "@/components/flow";
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
 import {
   PrimaryButton,
@@ -8,6 +9,7 @@ import {
   SelectableChip,
   SurfaceCard,
 } from "@/components/ui";
+import { hasFlowParams, writeFlowSession } from "@/lib/flow/localSession";
 import { buildNextHref, decodeCustomValue, slugifyCustomValue } from "@/lib/flow/queryParams";
 import type { VibeId, VibeOption } from "@/types";
 
@@ -148,6 +150,33 @@ export function VibeSelectionShell({
     vibeIds: [],
   });
 
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      !hasFlowParams(new URLSearchParams(window.location.search)) &&
+      selectedVibeIds.length === 0 &&
+      customVibes.length === 0
+    ) {
+      return;
+    }
+
+    writeFlowSession({
+      appliances: flowParams.applianceIds,
+      customIngredients: flowParams.customIngredients,
+      customVibes: customVibes.map((vibe) => vibe.queryValue),
+      ingredients: flowParams.ingredientIds,
+      situation: flowParams.situationId,
+      vibes: selectedVibeIds,
+    });
+  }, [
+    customVibes,
+    flowParams.applianceIds,
+    flowParams.customIngredients,
+    flowParams.ingredientIds,
+    flowParams.situationId,
+    selectedVibeIds,
+  ]);
+
   function toggleVibe(vibeId: VibeId) {
     setSelectedVibeIds((currentIds) => {
       if (currentIds.includes(vibeId)) {
@@ -273,6 +302,7 @@ export function VibeSelectionShell({
       showBottomNav={false}
       showDesktopNav={false}
     >
+      <FlowSessionSync />
       <div className="space-y-5">
         <PageHeader
           eyebrow="Vibe"

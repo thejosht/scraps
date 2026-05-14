@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FlowSessionSync } from "@/components/flow";
 import { appliances } from "@/data";
 import type { Appliance, ApplianceId } from "@/types";
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
@@ -210,6 +211,7 @@ export default async function AppliancesPage({
       showBottomNav={false}
       showDesktopNav={false}
     >
+      <FlowSessionSync />
       <div className="space-y-5">
         <PageHeader
           eyebrow="Appliances"

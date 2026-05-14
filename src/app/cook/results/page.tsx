@@ -1,4 +1,5 @@
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
+import { ClearFlowButton, FlowSessionSync } from "@/components/flow";
 import {
   EmptyState,
   PrimaryButton,
@@ -379,6 +380,7 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
             recipes come next.
           </p>
         </div>
+        <ClearFlowButton className="w-full" />
       </div>
     </SurfaceCard>
   );
@@ -389,6 +391,7 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
       showBottomNav={false}
       showDesktopNav={false}
     >
+      <FlowSessionSync />
       <div className="space-y-5">
         <PageHeader
           eyebrow="Results"

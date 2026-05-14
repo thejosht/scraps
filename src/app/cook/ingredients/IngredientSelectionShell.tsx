@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CategoryBubble, IngredientBubble } from "@/components/bubbles";
+import { FlowSessionSync } from "@/components/flow";
 import { AppShell, PageHeader, StepProgress } from "@/components/layout";
 import {
   EmptyState,
@@ -15,6 +16,7 @@ import {
   isQuickMealUpgradeSituation,
   slugifyCustomValue,
 } from "@/lib/flow/queryParams";
+import { hasFlowParams, writeFlowSession } from "@/lib/flow/localSession";
 import type {
   IngredientGroup,
   IngredientId,
@@ -426,6 +428,31 @@ export function IngredientSelectionShell({
     selectedIngredientIds,
   });
 
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      !hasFlowParams(new URLSearchParams(window.location.search)) &&
+      selectedIngredientIds.length === 0 &&
+      customIngredients.length === 0
+    ) {
+      return;
+    }
+
+    writeFlowSession({
+      appliances: flowParams.applianceIds,
+      customIngredients: customIngredients.map(
+        (ingredient) => ingredient.queryValue,
+      ),
+      ingredients: selectedIngredientIds,
+      situation: flowParams.situationId,
+    });
+  }, [
+    customIngredients,
+    flowParams.applianceIds,
+    flowParams.situationId,
+    selectedIngredientIds,
+  ]);
+
   function handleGroupSelect(groupId: IngredientId) {
     setActiveGroupId(groupId);
     setActiveSubgroupId((currentSubgroupId) => {
@@ -579,6 +606,7 @@ export function IngredientSelectionShell({
       showBottomNav={false}
       showDesktopNav={false}
     >
+      <FlowSessionSync />
       <div className="space-y-5">
         <PageHeader
           eyebrow={isUpgradeMode ? "Quick meal upgrade" : "Ingredients"}

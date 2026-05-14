@@ -1,4 +1,5 @@
 import { recipeTemplates } from "@/data/recipeTemplates";
+import { isQuickMealUpgradeSituation } from "@/lib/flow/queryParams";
 import type {
   ApplianceId,
   IngredientId,
@@ -18,6 +19,15 @@ export type BuildRecipeResultsInput = {
   vibeIds: string[];
 };
 
+const upgradeBaseTemplateIds = new Map<string, string[]>([
+  ["boxed-mac-and-cheese", ["boxed-mac-and-cheese-upgrade"]],
+  ["instant-noodles", ["upgraded-instant-noodles"]],
+  ["instant-ramen", ["upgraded-instant-noodles"]],
+  ["ramen-noodles", ["upgraded-instant-noodles"]],
+  ["frozen-fries", ["loaded-frozen-fries"]],
+  ["canned-soup", ["canned-soup-upgrade"]],
+]);
+
 function stableSortMatches(matches: RankedRecipeMatch[]) {
   return matches.toSorted(
     (first, second) =>
@@ -33,7 +43,17 @@ export function buildRecipeResults({
   situationId,
   vibeIds,
 }: BuildRecipeResultsInput) {
+  const lockedUpgradeTemplateIds = isQuickMealUpgradeSituation(situationId)
+    ? ingredientIds
+        .map((ingredientId) => upgradeBaseTemplateIds.get(ingredientId))
+        .find((templateIds) => templateIds && templateIds.length > 0)
+    : undefined;
   const matches = recipeTemplates
+    .filter(
+      (template) =>
+        !lockedUpgradeTemplateIds ||
+        lockedUpgradeTemplateIds.includes(template.id),
+    )
     .map((template) => {
       const ingredientMatch = matchRecipeIngredients({
         selectedIngredientIds: ingredientIds as IngredientId[],

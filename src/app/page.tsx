@@ -140,7 +140,10 @@ export default function Home() {
                 <PrimaryButton className="w-full" href="/cook">
                   Start with what I have
                 </PrimaryButton>
-                <SecondaryButton className="w-full" href="/cook">
+                <SecondaryButton
+                  className="w-full"
+                  href="/cook/appliances?situation=quick-meal-upgrade"
+                >
                   Make a quick meal better
                 </SecondaryButton>
               </div>

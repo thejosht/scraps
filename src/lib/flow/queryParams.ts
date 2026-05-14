@@ -37,6 +37,12 @@ export function decodeCustomValue(value: string) {
     .replace(/\s+/g, " ");
 }
 
+export function isQuickMealUpgradeSituation(situationId?: string) {
+  return (
+    situationId === "quick-meal-upgrade" || situationId === "upgrade-premade"
+  );
+}
+
 export function buildNextHref({
   path,
   query,

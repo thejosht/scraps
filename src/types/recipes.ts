@@ -29,6 +29,7 @@ export type FlowSituationId =
   | "cheap-filling"
   | "bake"
   | "snack"
+  | "quick-meal-upgrade"
   | "upgrade-premade"
   | "emergency";
 

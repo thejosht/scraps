@@ -10,7 +10,11 @@ import {
   SelectableChip,
   SurfaceCard,
 } from "@/components/ui";
-import { buildNextHref, slugifyCustomValue } from "@/lib/flow/queryParams";
+import {
+  buildNextHref,
+  isQuickMealUpgradeSituation,
+  slugifyCustomValue,
+} from "@/lib/flow/queryParams";
 import type {
   IngredientGroup,
   IngredientId,
@@ -39,6 +43,15 @@ type CustomIngredient = {
 };
 
 type KnownSelectableIngredient = IngredientSubgroup | SpecificIngredient;
+
+const upgradeModeGroupOrder = [
+  "frozen-premade",
+  "pantry-basics",
+  "leftovers",
+  "proteins",
+  "sauces",
+  "spices-seasonings",
+];
 
 function getPreviewText(
   parentId: IngredientId,
@@ -267,6 +280,7 @@ export function IngredientSelectionShell({
     initialCustomIngredients,
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const isUpgradeMode = isQuickMealUpgradeSituation(flowParams.situationId);
   const activeGroup = groups.find((group) => group.id === activeGroupId);
   const activeSubgroup = subgroups.find(
     (subgroup) => subgroup.id === activeSubgroupId,
@@ -327,6 +341,7 @@ export function IngredientSelectionShell({
       }),
     [knownIngredientsById, selectedIngredientIds, selectedIngredients],
   );
+  const visibleSuggestedIngredients = isSearching ? [] : suggestedIngredients;
   const selectedItems = [
     ...selectedIngredients.map((ingredient) => ({
       id: ingredient.id,
@@ -377,6 +392,30 @@ export function IngredientSelectionShell({
         : [],
     [groups, isSearching, normalizedSearchTerm],
   );
+  const displayGroups = useMemo(() => {
+    if (!isUpgradeMode) {
+      return groups;
+    }
+
+    return [...groups].sort((firstGroup, secondGroup) => {
+      const firstIndex = upgradeModeGroupOrder.indexOf(firstGroup.id);
+      const secondIndex = upgradeModeGroupOrder.indexOf(secondGroup.id);
+
+      if (firstIndex === -1 && secondIndex === -1) {
+        return firstGroup.name.localeCompare(secondGroup.name);
+      }
+
+      if (firstIndex === -1) {
+        return 1;
+      }
+
+      if (secondIndex === -1) {
+        return -1;
+      }
+
+      return firstIndex - secondIndex;
+    });
+  }, [groups, isUpgradeMode]);
   const hasSearchResults =
     searchSpecificResults.length > 0 ||
     searchSubgroupResults.length > 0 ||
@@ -542,9 +581,17 @@ export function IngredientSelectionShell({
     >
       <div className="space-y-5">
         <PageHeader
-          eyebrow="Ingredients"
-          title="What do you have?"
-          description="Start with a category. You can get specific next, like chicken drumsticks, leftover rice, or boxed mac."
+          eyebrow={isUpgradeMode ? "Quick meal upgrade" : "Ingredients"}
+          title={
+            isUpgradeMode
+              ? "What are you trying to make better?"
+              : "What do you have?"
+          }
+          description={
+            isUpgradeMode
+              ? "Pick the boxed, frozen, leftover, canned, or instant item you already have."
+              : "Start with a category. You can get specific next, like chicken drumsticks, leftover rice, or boxed mac."
+          }
         />
 
         <SurfaceCard warm className="p-4 sm:p-5">
@@ -676,19 +723,21 @@ export function IngredientSelectionShell({
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-text-muted">
-                  Start with a category
+                  {isUpgradeMode ? "Start with the base item" : "Start with a category"}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-text-primary">
-                  Browse your kitchen in chunks
+                  {isUpgradeMode
+                    ? "Quick meals and add-ons first"
+                    : "Browse your kitchen in chunks"}
                 </h2>
               </div>
               <p className="text-sm text-text-secondary">
-                {groups.length} groups
+                {displayGroups.length} groups
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {groups.map((group) => (
+              {displayGroups.map((group) => (
                 <CategoryBubble
                   key={group.id}
                   onClick={() => handleGroupSelect(group.id)}
@@ -858,21 +907,23 @@ export function IngredientSelectionShell({
                   Good with this
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-text-primary">
-                  {suggestedIngredients.length > 0
+                  {isSearching
+                    ? "Finish search to see quick add-ons."
+                    : visibleSuggestedIngredients.length > 0
                     ? "Quick add-ons based on what you picked."
                     : "Suggestions will appear after you choose ingredients."}
                 </h2>
               </div>
-              {suggestedIngredients.length > 0 ? (
+              {visibleSuggestedIngredients.length > 0 ? (
                 <span className="rounded-full border border-border bg-surface-warm px-3 py-1.5 text-xs font-semibold text-text-muted">
                   Structured pairings
                 </span>
               ) : null}
             </div>
 
-            {suggestedIngredients.length > 0 ? (
+            {visibleSuggestedIngredients.length > 0 ? (
               <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-                {suggestedIngredients.map((ingredient) => (
+                {visibleSuggestedIngredients.map((ingredient) => (
                   <IngredientBubble
                     categoryLabel={ingredient.subcategory ?? ingredient.category}
                     helperText={

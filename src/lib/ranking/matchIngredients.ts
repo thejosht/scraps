@@ -1,4 +1,5 @@
 import { ingredients } from "@/data/ingredients";
+import { slugifyCustomValue } from "@/lib/flow/queryParams";
 import type {
   Ingredient,
   IngredientId,
@@ -9,6 +10,22 @@ import type {
 const ingredientsById = new Map<IngredientId, Ingredient>(
   ingredients.map((ingredient) => [ingredient.id, ingredient]),
 );
+const ingredientsByLookupValue = new Map<string, Ingredient>();
+
+ingredients.forEach((ingredient) => {
+  [
+    ingredient.id,
+    ingredient.name,
+    ...ingredient.synonyms,
+    ...ingredient.aliases,
+  ].forEach((value) => {
+    const lookupValue = slugifyCustomValue(value);
+
+    if (lookupValue && !ingredientsByLookupValue.has(lookupValue)) {
+      ingredientsByLookupValue.set(lookupValue, ingredient);
+    }
+  });
+});
 
 export type IngredientSlotMatch = {
   ingredientIds: IngredientId[];
@@ -88,7 +105,11 @@ export function matchRecipeIngredients({
   template: RecipeTemplate;
 }): RecipeIngredientMatch {
   const selectedIngredients = selectedIngredientIds
-    .map((ingredientId) => ingredientsById.get(ingredientId))
+    .map(
+      (ingredientId) =>
+        ingredientsById.get(ingredientId) ??
+        ingredientsByLookupValue.get(slugifyCustomValue(ingredientId)),
+    )
     .filter((ingredient): ingredient is Ingredient => Boolean(ingredient));
   const requiredMatches = template.requiredSlots.map((slot) =>
     matchSlot(slot, selectedIngredients),

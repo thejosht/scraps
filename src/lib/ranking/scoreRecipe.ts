@@ -4,6 +4,7 @@ import type {
   RecipeTemplate,
   VibeId,
 } from "@/types";
+import { isQuickMealUpgradeSituation } from "@/lib/flow/queryParams";
 import type { RecipeApplianceMatch } from "./matchAppliances";
 import type { RecipeIngredientMatch } from "./matchIngredients";
 
@@ -14,6 +15,7 @@ const relatedSituations: Record<string, RecipeSituationId[]> = {
   "cheap-filling": ["cheap-filling", "quick-lunch", "low-energy"],
   bake: ["bake", "breakfast"],
   snack: ["snack", "late-night", "quick-lunch"],
+  "quick-meal-upgrade": ["quick-meal-upgrade", "upgrade-premade", "low-energy"],
   "upgrade-premade": ["upgrade-premade", "low-energy", "leftovers"],
   emergency: ["emergency", "low-energy", "late-night"],
 };
@@ -58,7 +60,7 @@ function getEffortScore({
   const wantsLowEffort =
     situationId === "too-tired" ||
     situationId === "emergency" ||
-    situationId === "upgrade-premade" ||
+    isQuickMealUpgradeSituation(situationId) ||
     vibeIds.includes("low-effort");
 
   if (!wantsLowEffort) {
@@ -196,6 +198,13 @@ export function scoreRecipe({
   vibeIds: VibeId[];
 }): RankedRecipeMatch | null {
   if (!applianceMatch.isCompatible) {
+    return null;
+  }
+
+  if (
+    isQuickMealUpgradeSituation(situationId) &&
+    !template.tags.includes("quick-meal-upgrade")
+  ) {
     return null;
   }
 

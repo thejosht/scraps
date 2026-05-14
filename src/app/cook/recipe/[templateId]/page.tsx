@@ -13,6 +13,7 @@ import {
   buildNextHref,
   decodeCustomValue,
   parseCsvParam,
+  slugifyCustomValue,
 } from "@/lib/flow/queryParams";
 import { buildRecipeResults } from "@/lib/ranking";
 import type {
@@ -38,13 +39,35 @@ type RecipeDetailPageProps = {
 const ingredientLabels = new Map(
   ingredients.map((ingredient) => [ingredient.id, ingredient.name]),
 );
+const ingredientLookupIds = new Map<string, string>();
+const ingredientLookupLabels = new Map<string, string>();
+
+ingredients.forEach((ingredient) => {
+  [
+    ingredient.id,
+    ingredient.name,
+    ...ingredient.synonyms,
+    ...ingredient.aliases,
+  ].forEach((value) => {
+    const lookupValue = slugifyCustomValue(value);
+
+    if (lookupValue && !ingredientLookupLabels.has(lookupValue)) {
+      ingredientLookupIds.set(lookupValue, ingredient.id);
+      ingredientLookupLabels.set(lookupValue, ingredient.name);
+    }
+  });
+});
 
 const applianceLabels = new Map(
   appliances.map((appliance) => [appliance.id, appliance.label]),
 );
 
 function getIngredientLabel(id: string) {
-  return ingredientLabels.get(id) ?? decodeCustomValue(id);
+  return (
+    ingredientLabels.get(id) ??
+    ingredientLookupLabels.get(slugifyCustomValue(id)) ??
+    decodeCustomValue(id)
+  );
 }
 
 function getApplianceLabel(id: string) {
@@ -74,7 +97,12 @@ function getSelectedTemplateIngredientNames({
   const slotIngredientIds = getSlotIngredientIds(template);
 
   return selectedIngredientIds
-    .filter((ingredientId) => slotIngredientIds.has(ingredientId))
+    .filter((ingredientId) => {
+      const canonicalId =
+        ingredientLookupIds.get(slugifyCustomValue(ingredientId)) ?? ingredientId;
+
+      return slotIngredientIds.has(canonicalId);
+    })
     .map(getIngredientLabel);
 }
 
@@ -396,8 +424,8 @@ export default async function RecipeDetailPage({
       </div>
       <div className="mt-5 rounded-2xl border border-border bg-surface-warm p-4">
         <p className="text-sm leading-6 text-text-secondary">
-          This page uses structured templates only. Full personalized steps come
-          later.
+          These directions are template-based so they stay practical and
+          consistent.
         </p>
       </div>
     </SurfaceCard>
@@ -456,7 +484,12 @@ export default async function RecipeDetailPage({
           )}
         </DetailSection>
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div
+          className={[
+            "grid gap-5",
+            needItems.length > 0 ? "lg:grid-cols-2" : "lg:grid-cols-1",
+          ].join(" ")}
+        >
           <DetailSection title="What you have">
             <ChipList
               emptyText="No matching selected ingredients for this template yet."
@@ -472,13 +505,7 @@ export default async function RecipeDetailPage({
                 ))}
               </ul>
             </DetailSection>
-          ) : (
-            <DetailSection title="You may need">
-              <p className="text-sm leading-6 text-text-secondary">
-                No important missing items from the current template match.
-              </p>
-            </DetailSection>
-          )}
+          ) : null}
         </div>
 
         <DetailSection title="Tools">

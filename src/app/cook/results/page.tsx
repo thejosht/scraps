@@ -15,6 +15,7 @@ import { vibes } from "@/data/vibes";
 import {
   buildNextHref,
   decodeCustomValue,
+  isQuickMealUpgradeSituation,
   parseCsvParam,
 } from "@/lib/flow/queryParams";
 import { buildRecipeResults } from "@/lib/ranking";
@@ -44,6 +45,7 @@ const situationLabels = new Map([
   ["cheap-filling", "Cheap and filling"],
   ["bake", "I want to bake"],
   ["snack", "I want a snack"],
+  ["quick-meal-upgrade", "Make a quick meal better"],
   ["upgrade-premade", "Make a quick meal better"],
   ["emergency", "Emergency meal"],
 ]);
@@ -304,6 +306,7 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   const customIngredients = parseCsvParam(params?.customIngredients);
   const vibeIds = parseCsvParam(params?.vibes);
   const customVibes = parseCsvParam(params?.customVibes);
+  const isUpgradeMode = isQuickMealUpgradeSituation(params?.situation);
   const rankedMatches = buildRecipeResults({
     applianceIds,
     customIngredients,
@@ -389,8 +392,16 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
       <div className="space-y-5">
         <PageHeader
           eyebrow="Results"
-          title="Here’s what you can make"
-          description="Based on what you picked, Scraps found realistic meal directions that fit your ingredients, tools, and mood."
+          title={
+            isUpgradeMode
+              ? "Here’s how to make it better"
+              : "Here’s what you can make"
+          }
+          description={
+            isUpgradeMode
+              ? "Based on your quick meal base, Scraps found realistic upgrade directions that fit your tools and mood."
+              : "Based on what you picked, Scraps found realistic meal directions that fit your ingredients, tools, and mood."
+          }
         />
 
         <SurfaceCard warm className="p-4 sm:p-5">

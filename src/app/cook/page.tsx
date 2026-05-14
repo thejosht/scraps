@@ -59,7 +59,7 @@ const foodSituations: FoodSituation[] = [
     description: "Small bites, quick cravings, and light food.",
   },
   {
-    id: "upgrade-premade",
+    id: "quick-meal-upgrade",
     title: "Make a quick meal better",
     description:
       "Improve instant noodles, boxed mac, frozen meals, canned soup, leftovers, or other quick food.",
@@ -78,8 +78,12 @@ export default async function CookPage({ searchParams }: CookPageProps) {
   const customIngredients = parseCsvParam(params?.customIngredients);
   const vibeIds = parseCsvParam(params?.vibes);
   const customVibes = parseCsvParam(params?.customVibes);
+  const situationParam =
+    params?.situation === "upgrade-premade"
+      ? "quick-meal-upgrade"
+      : params?.situation;
   const selectedSituation = foodSituations.find(
-    (situation) => situation.id === params?.situation,
+    (situation) => situation.id === situationParam,
   );
   const getCookHref = (path: string, situationId: string) =>
     buildNextHref({
